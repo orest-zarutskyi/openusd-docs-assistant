@@ -39,14 +39,15 @@ class Settings(BaseSettings):
     chat_model: str = "qwen3:4b"
     embedding_model: str = "nomic-embed-text:v1.5"
     embedding_revision: str = ""
-    top_k: int = Field(default=5, ge=1, le=10)
+    top_k: int = Field(default=8, ge=1, le=10)
     # Defaults below were chosen on eval/questions.jsonl (dev) only; see
     # reports/retrieval_dev.md. Re-tune them on dev after changing models or chunking.
     retrieval_mode: Mode = "hybrid-rerank"
-    reranker_model: str = "Xenova/ms-marco-MiniLM-L-6-v2"
+    reranker_model: str = "BAAI/bge-reranker-base"
     # Refusal gates: cosine for dense and hybrid, raw cross-encoder score for rerank.
-    min_score: float = Field(default=0.7412, ge=0, le=1)
-    rerank_min_score: float = -0.9931
+    # The dev cosine cut was 0.6891 for dense and 0.6752 for hybrid; dense's is the default.
+    min_score: float = Field(default=0.6891, ge=0, le=1)
+    rerank_min_score: float = -0.9831
     # Candidates taken from each of BM25 and dense before fusion, and how many of the
     # fused list the cross-encoder rescores.
     candidate_depth: int = Field(default=50, ge=10, le=200)
