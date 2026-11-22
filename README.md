@@ -22,11 +22,11 @@ Use Python 3.12 and [uv](https://docs.astral.sh/uv/getting-started/installation/
 ```powershell
 uv sync --locked --extra dev
 uv run --locked openusd-assistant check-corpus
-uv run --locked openusd-assistant eval-retrieval --backend bm25
+uv run --locked openusd-assistant eval-retrieval --modes bm25
 uv run --locked --extra dev pytest
 ```
 
-For an existing snapshot, pass `--source-dir data/openusd-26.08` to `check-corpus`, `index` or the BM25 evaluation. The directory should contain the five files listed in the manifest under `docs/`, plus the original `LICENSE.txt` and `NOTICE.txt`.
+For an existing snapshot, pass `--source-dir data/openusd-26.08` to `check-corpus`, `index` or the BM25 evaluation. The directory should contain the 76 files listed in the manifest under `docs/`, plus the original `LICENSE.txt` and `NOTICE.txt`. `openusd-assistant build-manifest --snapshot-dir data/openusd-26.08` downloads them.
 
 For live generation, start [Ollama](https://ollama.com/) on the host, pull the two models below, and select the Qdrant storage. For a single local process without Docker, set `OPENUSD_QDRANT_PATH` to `data/qdrant` in `.env`. Run the indexer before starting the API because Qdrant's embedded storage accepts a single process at a time.
 

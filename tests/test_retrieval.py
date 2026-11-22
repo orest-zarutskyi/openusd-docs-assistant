@@ -111,3 +111,37 @@ def test_rerank_reorders_candidates_and_reports_the_top_score():
 def test_gate_refuses_below_threshold_or_without_a_score(confidence, min_score, expected):
     retrieve = gated(Fixed([A], [1.0], confidence), top_k=3, min_score=min_score)
     assert [c.id for c in retrieve("q")] == expected
+
+
+def test_build_retriever_applies_each_modes_own_gate():
+    from openusd_assistant.retrieval import build_retriever
+
+    chunks = [chunk("payload", "A payload is a deferred reference.")]
+    dense = Fixed(chunks, [0.6], 0.6)
+    loaded = []
+
+    def scorer():
+        loaded.append(True)
+        return lambda question, documents: [2.0 for _ in documents]
+
+    def make(mode, min_score=0.5, rerank_min_score=1.0):
+        return build_retriever(
+            mode,
+            chunks=chunks,
+            dense=dense,
+            scorer=scorer,
+            top_k=3,
+            min_score=min_score,
+            rerank_min_score=rerank_min_score,
+        )
+
+    question = "What is a payload?"
+    assert make("dense")(question) == chunks
+    assert make("dense", min_score=0.7)(question) == []
+    assert make("bm25", min_score=0.99)(question) == chunks  # BM25 never refuses
+    assert make("hybrid", min_score=0.7)(question) == []
+    assert loaded == []  # the cross-encoder is loaded only for hybrid-rerank
+    assert make("hybrid-rerank")(question) == chunks
+    assert make("hybrid-rerank", rerank_min_score=3.0)(question) == []
+    with pytest.raises(ValueError):
+        make("sparse")

@@ -1,8 +1,8 @@
-# Retrieval: eval\questions.jsonl
+# Retrieval: eval/questions.jsonl
 
-- Date: 2026-11-22; code commit `e3ceb97`.
+- Date: 2026-11-22; code commit `e5caa9d` (with uncommitted changes).
 - Corpus: OpenUSD v26.08 `ee47c679abde`, 76 documents, 952 chunks.
-- Questions: `eval\questions.jsonl`, 32 total 3 comparison, 19 lookup, 4 paraphrase, 6 unanswerable.
+- Questions: `eval/questions.jsonl`, 32 total: 3 comparison, 19 lookup, 4 paraphrase, 6 unanswerable.
 - Dense: `nomic-embed-text:v1.5` (digest `0a109f422b47`) on Ollama 0.40.16, embedded Qdrant, cosine similarity.
 - Hybrid: RRF k=60 over the top 50 BM25 and dense candidates; rerank rescores the top 20 fused candidates with fastembed (ONNX, CPU).
 - Machine: Windows 11, 32 logical CPUs (AMD Ryzen 9 7950X 16-Core Processor), GPU NVIDIA GeForce RTX 4070 Ti. Latency is wall time per query in one warm process.
@@ -11,11 +11,11 @@ Relevance: a chunk is relevant if it shares a line with an expected source span.
 
 | Mode | hit@5 | MRR@5 | nDCG@10 | hit@5 strict | p50 ms | p95 ms |
 | --- | --- | --- | --- | --- | --- | --- |
-| bm25 | 0.846 | 0.801 | 0.817 | 0.808 | 1 | 2 |
-| dense | 0.846 | 0.732 | 0.784 | 0.808 | 14 | 16 |
-| hybrid | 0.962 | 0.780 | 0.829 | 0.923 | 16 | 18 |
-| hybrid-rerank (ms-marco-MiniLM-L-6-v2) **(winner)** | 0.923 | 0.803 | 0.841 | 0.885 | 526 | 534 |
-| hybrid-rerank (bge-reranker-base) | 0.962 | 0.790 | 0.849 | 0.923 | 2548 | 2584 |
+| bm25 | 0.846 | 0.801 | 0.817 | 0.808 | 2 | 3 |
+| dense | 0.846 | 0.732 | 0.784 | 0.808 | 15 | 16 |
+| hybrid | 0.962 | 0.780 | 0.829 | 0.923 | 17 | 19 |
+| hybrid-rerank (ms-marco-MiniLM-L-6-v2) **(winner)** | 0.923 | 0.803 | 0.841 | 0.885 | 526 | 531 |
+| hybrid-rerank (bge-reranker-base) | 0.962 | 0.790 | 0.849 | 0.923 | 2546 | 2579 |
 
 Winner rule, fixed before the run: highest nDCG@10; modes within 0.01 of it are decided by the lower p95 latency.
 
@@ -38,10 +38,10 @@ The threshold maximizes balanced accuracy over dev questions: answerable questio
 | Mode | Gate score | Threshold | Answerable kept | Unanswerable refused |
 | --- | --- | --- | --- | --- |
 | bm25 | none | — | 1.000 | 0.000 |
-| dense | top cosine | 0.7459 | 0.731 | 1.000 |
-| hybrid | best dense cosine | 0.7459 | 0.731 | 1.000 |
-| hybrid-rerank (ms-marco-MiniLM-L-6-v2) | top cross-encoder score | -0.5223 | 0.962 | 1.000 |
-| hybrid-rerank (bge-reranker-base) | top cross-encoder score | 0.8545 | 0.962 | 1.000 |
+| dense | top cosine | 0.7412 | 0.731 | 1.000 |
+| hybrid | best dense cosine | 0.7412 | 0.731 | 1.000 |
+| hybrid-rerank (ms-marco-MiniLM-L-6-v2) | top cross-encoder score | -0.9931 | 0.962 | 1.000 |
+| hybrid-rerank (bge-reranker-base) | top cross-encoder score | 0.7726 | 0.962 | 1.000 |
 
 ## Missed at 5
 

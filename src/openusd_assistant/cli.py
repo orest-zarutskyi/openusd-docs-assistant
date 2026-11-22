@@ -12,7 +12,13 @@ from .api import create_app
 from .corpus import fetch_chunks, load_manifest
 from .models import DependencyTimeout, DependencyUnavailable
 from .questions import load_questions, validate_question_sets
-from .retrieval import Bm25Searcher, HybridSearcher, RerankSearcher, fastembed_scorer
+from .retrieval import (
+    Bm25Searcher,
+    HybridSearcher,
+    RerankSearcher,
+    build_retriever,
+    fastembed_scorer,
+)
 from .retrieval_eval import choose_top_k, choose_winner, evaluate_searcher, markdown_report
 from .setup_info import describe_setup
 from .snapshot import build_manifest, corpus_report, github_file, github_tree
@@ -98,6 +104,8 @@ def main() -> int:
     check.add_argument("--dev", type=Path, default=Path("eval/questions.jsonl"))
     check.add_argument("--heldout", type=Path, default=Path("eval/heldout.jsonl"))
     serve = commands.add_parser("serve")
+    serve.add_argument("--manifest", type=Path, default=Path("corpus/manifest.json"))
+    serve.add_argument("--source-dir", type=Path, help="Use a verified local source snapshot.")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
@@ -123,7 +131,8 @@ def main() -> int:
         settings = Settings()
         if args.command == "eval-retrieval" and "heldout" in args.questions.name and not args.final:
             raise ValueError("Held-out questions need --final; tune settings on dev only.")
-        if args.command in {"index", "check-corpus", "eval-retrieval"}:
+        needs_chunks = args.command == "serve" and settings.retrieval_mode != "dense"
+        if args.command in {"index", "check-corpus", "eval-retrieval"} or needs_chunks:
             manifest = load_manifest(args.manifest)
             chunks = fetch_chunks(manifest, source_dir=args.source_dir)
             if args.command == "check-corpus":
@@ -133,6 +142,9 @@ def main() -> int:
                     report = corpus_report(manifest, chunks)
                     args.report.write_text(report, encoding="utf-8", newline="\n")
                 return 0
+            if args.command == "eval-retrieval" and set(args.modes.split(",")) == {"bm25"}:
+                run_retrieval_eval(args, settings, manifest, chunks, index=None)
+                return 0  # BM25 alone needs neither Ollama nor Qdrant
 
         models = OllamaModels(settings)
         client = connect_qdrant(settings)
@@ -146,7 +158,20 @@ def main() -> int:
                 index.index(chunks)  # make sure the dense index matches this corpus
                 run_retrieval_eval(args, settings, manifest, chunks, index)
             else:
-                app = create_app(index.retrieve, models.generate, index.ready)
+                retrieve = build_retriever(
+                    settings.retrieval_mode,
+                    chunks=chunks if needs_chunks else [],
+                    dense=index,
+                    scorer=lambda: fastembed_scorer(
+                        settings.reranker_model, settings.reranker_cache
+                    ),
+                    top_k=settings.top_k,
+                    min_score=settings.min_score,
+                    rerank_min_score=settings.rerank_min_score,
+                    candidate_depth=settings.candidate_depth,
+                    rerank_depth=settings.rerank_depth,
+                )
+                app = create_app(retrieve, models.generate, index.ready)
                 uvicorn.run(app, host=args.host, port=args.port)
         finally:
             client.close()

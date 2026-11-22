@@ -138,3 +138,32 @@ def gated(searcher: Searcher, top_k: int, min_score: float | None) -> Callable[[
         return result.chunks
 
     return retrieve
+
+
+def build_retriever(
+    mode: Mode,
+    *,
+    chunks: Sequence[Chunk],
+    dense: Searcher,
+    scorer: Callable[[], Scorer],
+    top_k: int,
+    min_score: float,
+    rerank_min_score: float,
+    candidate_depth: int = 50,
+    rerank_depth: int = 20,
+) -> Callable[[str], list[Chunk]]:
+    """Assemble the /ask retriever for one mode with that mode's refusal gate.
+
+    ``scorer`` is a factory so the cross-encoder is only loaded when the mode needs it.
+    """
+    if mode == "dense":
+        return gated(dense, top_k, min_score)
+    lexical = Bm25Searcher(chunks)
+    if mode == "bm25":
+        return gated(lexical, top_k, None)
+    hybrid = HybridSearcher(lexical, dense, depth=candidate_depth)
+    if mode == "hybrid":
+        return gated(hybrid, top_k, min_score)
+    if mode == "hybrid-rerank":
+        return gated(RerankSearcher(hybrid, scorer(), depth=rerank_depth), top_k, rerank_min_score)
+    raise ValueError(f"Unknown retrieval mode: {mode}")
