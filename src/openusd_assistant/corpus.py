@@ -11,7 +11,7 @@ from uuid import NAMESPACE_URL, uuid5
 from .models import Chunk
 
 _REPOSITORY = "PixarAnimationStudios/OpenUSD"
-_DOCUMENT = re.compile(r"docs/[A-Za-z0-9_]+\.rst")
+_DOCUMENT = re.compile(r"docs/(?:[A-Za-z0-9_]+/)*[A-Za-z0-9_]+\.rst")
 _NOTICES = {"LICENSE.txt", "NOTICE.txt"}
 _MAX_SOURCE_BYTES = 2 * 1024 * 1024
 _HEADING_RULE = re.compile(r"([=!~^`#*+_.:\-])\1{2,}")

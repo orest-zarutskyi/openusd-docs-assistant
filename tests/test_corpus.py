@@ -81,10 +81,21 @@ def test_local_snapshot_validates_source_and_notices(snapshot):
         fetch_chunks(manifest, source_dir=source_dir)
 
 
-def test_manifest_rejects_unapproved_paths(snapshot):
+@pytest.mark.parametrize(
+    "path", ["docs/../secret.txt", "docs/a/../b.rst", "docs//b.rst", "docs/b.md", "/docs/b.rst"]
+)
+def test_manifest_rejects_unapproved_paths(snapshot, path):
     manifest_path, _ = snapshot
     manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
-    manifest["documents"][0]["path"] = "docs/../secret.txt"
+    manifest["documents"][0]["path"] = path
     manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
     with pytest.raises(ValueError, match="Invalid OpenUSD document path"):
         load_manifest(manifest_path)
+
+
+def test_manifest_accepts_nested_documentation(snapshot):
+    manifest_path, _ = snapshot
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["documents"][0]["path"] = "docs/user_guides/schemas/index.rst"
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+    assert load_manifest(manifest_path).documents[0].path == "docs/user_guides/schemas/index.rst"
