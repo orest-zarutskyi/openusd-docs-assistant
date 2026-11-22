@@ -9,6 +9,7 @@ from qdrant_client.http.exceptions import ResponseHandlingException, UnexpectedR
 
 from .adapters import OllamaModels, QdrantIndex, Settings, connect_qdrant
 from .api import create_app
+from .chat import make_chat
 from .corpus import fetch_chunks, load_manifest
 from .models import DependencyTimeout, DependencyUnavailable
 from .questions import load_questions, validate_question_sets
@@ -171,7 +172,8 @@ def main() -> int:
                     candidate_depth=settings.candidate_depth,
                     rerank_depth=settings.rerank_depth,
                 )
-                app = create_app(retrieve, models.generate, index.ready)
+                chat = make_chat(settings, models)
+                app = create_app(retrieve, chat.generate, index.ready)
                 uvicorn.run(app, host=args.host, port=args.port)
         finally:
             client.close()
