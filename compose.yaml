@@ -1,0 +1,22 @@
+services:
+  api:
+    build: .
+    environment:
+      OPENUSD_QDRANT_URL: http://qdrant:6333
+      OPENUSD_OLLAMA_URL: ${OPENUSD_OLLAMA_URL:-http://host.docker.internal:11434}
+      OPENUSD_CHAT_MODEL: ${OPENUSD_CHAT_MODEL:-qwen3:4b}
+      OPENUSD_EMBEDDING_MODEL: ${OPENUSD_EMBEDDING_MODEL:-nomic-embed-text:v1.5}
+      OPENUSD_EMBEDDING_REVISION: ${OPENUSD_EMBEDDING_REVISION:-}
+      OPENUSD_TOP_K: ${OPENUSD_TOP_K:-5}
+      OPENUSD_MIN_SCORE: ${OPENUSD_MIN_SCORE:-0.55}
+    ports:
+      - "127.0.0.1:8000:8000"
+    depends_on:
+      - qdrant
+  qdrant:
+    image: qdrant/qdrant:v1.20.2
+    volumes:
+      - qdrant-data:/qdrant/storage
+
+volumes:
+  qdrant-data:

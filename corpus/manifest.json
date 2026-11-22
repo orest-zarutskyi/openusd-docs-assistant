@@ -1,0 +1,43 @@
+{
+  "repository": "PixarAnimationStudios/OpenUSD",
+  "release": "v26.08",
+  "commit": "ee47c679abde5b467a7b6a41f3b2285564a4222e",
+  "license": "Tomorrow Open Source Technology License 1.0",
+  "documents": [
+    {
+      "path": "docs/intro.rst",
+      "title": "Introduction to USD",
+      "sha256": "2c21f700fc164708ac6628553824b084f2d849c6b7ab1c3c9b18a12ef8090171"
+    },
+    {
+      "path": "docs/tut_helloworld.rst",
+      "title": "Hello World - Creating Your First USD Stage",
+      "sha256": "8c7a4dd7a4a1ad0016e53bf9e6b93cf686634dba4ffc6eb3507472e6419a8578"
+    },
+    {
+      "path": "docs/tut_inspect_and_author_props.rst",
+      "title": "Inspecting and Authoring Properties",
+      "sha256": "553253cd4ac83c06993122f9c49631ac3e28f5a0ee688038435deccb16fda35d"
+    },
+    {
+      "path": "docs/tut_referencing_layers.rst",
+      "title": "Referencing Layers",
+      "sha256": "3321457d9c3850774dbead1291a73db963874c685de3377bf9a63aaad09081af"
+    },
+    {
+      "path": "docs/tut_authoring_variants.rst",
+      "title": "Authoring Variants",
+      "sha256": "7d91c28e6302e7764d342aa40ae0e8a0ace852dc78bac6d03447ddc83b942b32"
+    }
+  ],
+  "notices": [
+    {
+      "path": "LICENSE.txt",
+      "sha256": "4d6e8e3a9bd0104e10c48e3bc6af2f0976448a70a377d20cef674740f96f4452"
+    },
+    {
+      "path": "NOTICE.txt",
+      "sha256": "f6ad9d41f77b1bd8edaecd64bd1e13f4224876b010e2415e308267a84862bc14"
+    }
+  ]
+}

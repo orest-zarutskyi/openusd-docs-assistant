@@ -1,0 +1,41 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "openusd-docs-assistant"
+version = "0.1.0"
+description = "Source-grounded question answering over a fixed OpenUSD documentation corpus"
+readme = "README.md"
+requires-python = ">=3.12,<3.15"
+dependencies = [
+    "fastapi==0.165.0",
+    "httpx>=0.28,<1",
+    "langchain-core==1.8.4",
+    "langchain-ollama==1.1.0",
+    "langgraph==1.2.24",
+    "ollama==0.6.3",
+    "pydantic==2.14.4",
+    "pydantic-settings==2.16.3",
+    "qdrant-client==1.20.0",
+    "uvicorn==0.54.0",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.4,<10", "ruff>=0.12,<1"]
+
+[project.scripts]
+openusd-assistant = "openusd_assistant.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/openusd_assistant"]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
