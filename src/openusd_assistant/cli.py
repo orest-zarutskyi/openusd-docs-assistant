@@ -11,6 +11,7 @@ from .adapters import OllamaModels, QdrantIndex, Settings, connect_qdrant
 from .api import create_app
 from .chat import make_chat
 from .corpus import fetch_chunks, load_manifest
+from .eval_commands import calibrate_judge, generate_answers, judge_answers, write_label_template
 from .models import DependencyTimeout, DependencyUnavailable
 from .questions import load_questions, validate_question_sets
 from .retrieval import (
@@ -104,6 +105,29 @@ def main() -> int:
     check.add_argument("--source-dir", type=Path, default=Path("data/openusd-26.08"))
     check.add_argument("--dev", type=Path, default=Path("eval/questions.jsonl"))
     check.add_argument("--heldout", type=Path, default=Path("eval/heldout.jsonl"))
+    answers = commands.add_parser("eval-answers", help="Answer questions with each model.")
+    answers.add_argument("--manifest", type=Path, default=Path("corpus/manifest.json"))
+    answers.add_argument("--source-dir", type=Path, help="Use a verified local source snapshot.")
+    answers.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))
+    answers.add_argument("--models", required=True, help="e.g. ollama:qwen3:4b,gemini:<id>")
+    answers.add_argument("--out-dir", type=Path, default=Path("reports/answers/dev"))
+    answers.add_argument("--limit", type=int, default=0, help="Only the first N questions.")
+    answers.add_argument("--final", action="store_true", help="Allow a held-out run.")
+    judged = commands.add_parser("judge-answers", help="Judge saved answers and write a report.")
+    judged.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))
+    judged.add_argument("--answers-dir", type=Path, default=Path("reports/answers/dev"))
+    judged.add_argument("--pricing", type=Path, default=Path("eval/pricing.json"))
+    judged.add_argument("--tier", choices=("free", "paid"), required=True)
+    judged.add_argument("--report", type=Path, default=Path("reports/answers_dev.md"))
+    judged.add_argument("--final", action="store_true", help="Allow a held-out run.")
+    labels = commands.add_parser("label-answers", help="Sample answers for human labelling.")
+    labels.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))
+    labels.add_argument("--answers-dir", type=Path, default=Path("reports/answers/dev"))
+    labels.add_argument("--out", type=Path, default=Path("eval/human_labels.jsonl"))
+    labels.add_argument("-n", type=int, default=20)
+    calib = commands.add_parser("calibrate-judge", help="Compare judge verdicts to human labels.")
+    calib.add_argument("--labels", type=Path, default=Path("eval/human_labels.jsonl"))
+    calib.add_argument("--answers-dir", type=Path, default=Path("reports/answers/dev"))
     serve = commands.add_parser("serve")
     serve.add_argument("--manifest", type=Path, default=Path("corpus/manifest.json"))
     serve.add_argument("--source-dir", type=Path, help="Use a verified local source snapshot.")
@@ -130,9 +154,24 @@ def main() -> int:
             print(json.dumps(result, indent=2))
             return 1 if result["errors"] else 0
         settings = Settings()
-        if args.command == "eval-retrieval" and "heldout" in args.questions.name and not args.final:
+        questions_path = getattr(args, "questions", None)
+        if (
+            questions_path
+            and "heldout" in questions_path.name
+            and not getattr(args, "final", False)
+        ):
             raise ValueError("Held-out questions need --final; tune settings on dev only.")
-        needs_chunks = args.command == "serve" and settings.retrieval_mode != "dense"
+        if args.command == "judge-answers":
+            judge_answers(args, settings)
+            return 0
+        if args.command == "label-answers":
+            write_label_template(args)
+            return 0
+        if args.command == "calibrate-judge":
+            calibrate_judge(args)
+            return 0
+        serving = args.command in {"serve", "eval-answers"}
+        needs_chunks = serving and settings.retrieval_mode != "dense"
         if args.command in {"index", "check-corpus", "eval-retrieval"} or needs_chunks:
             manifest = load_manifest(args.manifest)
             chunks = fetch_chunks(manifest, source_dir=args.source_dir)
@@ -172,9 +211,12 @@ def main() -> int:
                     candidate_depth=settings.candidate_depth,
                     rerank_depth=settings.rerank_depth,
                 )
-                chat = make_chat(settings, models)
-                app = create_app(retrieve, chat.generate, index.ready)
-                uvicorn.run(app, host=args.host, port=args.port)
+                if args.command == "eval-answers":
+                    generate_answers(args, settings, retrieve, OllamaModels)
+                else:
+                    chat = make_chat(settings, models)
+                    app = create_app(retrieve, chat.generate, index.ready)
+                    uvicorn.run(app, host=args.host, port=args.port)
         finally:
             client.close()
     except (

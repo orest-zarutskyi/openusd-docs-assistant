@@ -1,0 +1,14 @@
+{
+  "source": "https://aistudio.google.com/docs/pricing",
+  "retrieved": "2026-11-22",
+  "tier": "Paid tier, Standard, text input; output price includes thinking tokens",
+  "usd_per_million_tokens": {
+    "gemini-3.5-flash-lite": {"input": 0.30, "output": 2.50},
+    "gemini-3.8-flash": {
+      "input": 0.75,
+      "output": 3.75,
+      "note": "Until 2026-12-31; from 2027-01-01 the page lists $1.50 input and $7.50 output."
+    }
+  },
+  "local": "Ollama models are priced at $0; electricity and hardware are not included."
+}
