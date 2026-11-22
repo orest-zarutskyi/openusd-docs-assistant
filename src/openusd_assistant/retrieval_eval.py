@@ -77,7 +77,10 @@ def best_gate(answerable: Sequence[float | None], unanswerable: Sequence[float |
     # A missing score (no candidate at all) is refused by gated(), like the lowest score.
     answerable = [-math.inf if s is None else s for s in answerable]
     unanswerable = [-math.inf if s is None else s for s in unanswerable]
-    candidates = sorted({s for s in (*answerable, *unanswerable) if s != -math.inf})
+    observed = sorted({s for s in (*answerable, *unanswerable) if s != -math.inf})
+    # Cut midway between neighbouring observed scores, so the chosen threshold keeps a
+    # margin on both sides instead of sitting exactly on a dev question's score.
+    candidates = [observed[0], *((a + b) / 2 for a, b in zip(observed, observed[1:]))]
     best = None
     for threshold in candidates:
         gate = Gate(

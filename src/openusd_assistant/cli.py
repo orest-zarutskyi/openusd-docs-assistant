@@ -52,7 +52,11 @@ def run_retrieval_eval(args, settings, manifest, chunks, index) -> None:
     if args.report:
         setup = describe_setup(settings, manifest, chunks, questions, args)
         report = markdown_report(
-            results, winner=winner, top_k=top_k, title=f"Retrieval: {args.questions}", setup=setup
+            results,
+            winner=winner,
+            top_k=top_k,
+            title=f"Retrieval: {args.questions.as_posix()}",
+            setup=setup,
         )
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(report, encoding="utf-8", newline="\n")

@@ -63,10 +63,10 @@ def test_percentile_uses_nearest_rank():
 
 def test_best_gate_maximizes_balanced_accuracy_and_prefers_lower_thresholds():
     gate = best_gate([0.9, 0.8, 0.6], [0.5, 0.7])
-    assert gate.threshold == 0.6 or gate.threshold == 0.8
-    # 0.6: keeps 3/3, refuses 1/2 -> 0.75; 0.8: keeps 2/3, refuses 2/2 -> 0.833
-    assert gate == Gate(0.8, 2 / 3, 1.0)
-    assert best_gate([0.5, 0.5], [0.1]).threshold == 0.5
+    # Cuts sit between neighbours: 0.55 keeps 3/3 and refuses 1/2 (0.75);
+    # 0.75 keeps 2/3 and refuses 2/2 (0.833).
+    assert gate == Gate(pytest.approx(0.75), 2 / 3, 1.0)
+    assert best_gate([0.5, 0.5], [0.1]).threshold == pytest.approx(0.3)
     assert best_gate([None], [None]) == Gate(None, 1.0, 0.0)
     missing = best_gate([0.9], [None])  # no candidates for the refusal case: already refused
     assert missing == Gate(0.9, 1.0, 1.0)
@@ -124,7 +124,7 @@ def test_evaluate_searcher_end_to_end_and_report():
     assert result["hit@k"][10] == 1.0
     assert result["mrr@5"] == 0.5
     assert result["hit@5_strict"] == 0.0  # neither chunk contains all of lines 10-14
-    assert result["gate"] == Gate(0.7, 1.0, 1.0)
+    assert result["gate"] == Gate(pytest.approx(0.55), 1.0, 1.0)
     report = markdown_report(
         {"dense": result}, winner="dense", top_k=5, title="Dev", setup=["Setup line."]
     )

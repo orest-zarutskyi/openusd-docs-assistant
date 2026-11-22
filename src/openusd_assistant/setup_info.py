@@ -45,7 +45,7 @@ def describe_setup(
         f"- Date: {datetime.date.today().isoformat()}; code commit `{commit}`{dirty}.",
         f"- Corpus: OpenUSD {manifest.release} `{manifest.commit[:12]}`, "
         f"{len(manifest.documents)} documents, {len(chunks)} chunks.",
-        f"- Questions: `{args.questions}`, {len(questions)} total "
+        f"- Questions: `{args.questions.as_posix()}`, {len(questions)} total: "
         + ", ".join(f"{count} {kind}" for kind, count in sorted(kinds.items()))
         + ".",
         f"- Dense: `{settings.embedding_model}` (digest `{digest}`) on Ollama {ollama_version}, "
