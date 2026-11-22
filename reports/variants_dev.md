@@ -7,7 +7,7 @@ Rule, fixed before the runs: per model, the highest score = (answerable question
 | `ollama:qwen3.5:4b@nothink` | 0% | 100% | 27% | 0% | 0% | 0.500 | 1.6 | 7.3 |  |
 | `ollama:qwen3.5:4b@think` | 19% | 100% | 4% | 0% | 20% | 0.596 | 18.5 | 33.3 | yes |
 | `ollama:qwen3:4b@nothink` | 0% | 100% | 100% | 0% | — | 0.500 | 1.5 | 7.1 |  |
-| `ollama:qwen3:4b@think` | 42% | 100% | 8% | 0% | 46% | 0.712 | 10.1 | 21.4 | yes |
+| `ollama:qwen3:4b@think` | 54% | 100% | 8% | 0% | 58% | 0.769 | 10.1 | 21.4 | yes |
 
 ## Why citations fail
 
@@ -15,7 +15,7 @@ An answer counts only if every quote is verbatim in its chunk, as the API requir
 
 | Variant | Claimed answers | Quotes verbatim | Answers without quotes | Unanswerable reaching the model | Refused by the model |
 | --- | --- | --- | --- | --- | --- |
-| `ollama:qwen3.5:4b@nothink` | 19 | 85% | 0 | 0 | 0 |
-| `ollama:qwen3.5:4b@think` | 25 | 80% | 1 | 0 | 0 |
+| `ollama:qwen3.5:4b@nothink` | 19 | 95% | 0 | 0 | 0 |
+| `ollama:qwen3.5:4b@think` | 25 | 89% | 1 | 0 | 0 |
 | `ollama:qwen3:4b@nothink` | 0 | — | 0 | 0 | 0 |
-| `ollama:qwen3:4b@think` | 24 | 75% | 7 | 0 | 0 |
+| `ollama:qwen3:4b@think` | 24 | 88% | 7 | 0 | 0 |

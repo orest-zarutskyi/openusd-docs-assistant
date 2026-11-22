@@ -29,6 +29,17 @@ class Usage:
     thinking_tokens: int = 0
 
 
+def answer_schema() -> dict:
+    """JSON schema for generation with every field required.
+
+    DraftAnswer gives ``answer`` and ``evidence`` defaults, so its own schema leaves them
+    optional, and a model may then return status "answer" with no answer text at all.
+    """
+    schema = DraftAnswer.model_json_schema()
+    schema["required"] = ["status", "answer", "evidence"]
+    return schema
+
+
 def invalid_output(usage: Usage) -> InvalidModelOutput:
     """An invalid-answer error that still carries the tokens the call consumed."""
     error = InvalidModelOutput("The model returned an invalid response.")
@@ -85,7 +96,7 @@ class GeminiChat:
             temperature=0,
             max_output_tokens=MAX_OUTPUT_TOKENS,
             response_mime_type="application/json",
-            response_json_schema=DraftAnswer.model_json_schema(),
+            response_json_schema=answer_schema(),
             thinking_config=thinking,
         )
 

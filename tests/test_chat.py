@@ -57,6 +57,7 @@ def test_gemini_returns_structured_answer_and_usage():
     assert call["config"].temperature == 0
     assert call["config"].response_mime_type == "application/json"
     assert call["config"].thinking_config is None
+    assert call["config"].response_json_schema["required"] == ["status", "answer", "evidence"]
 
 
 def test_gemini_thinking_settings_are_passed_through():
@@ -116,3 +117,24 @@ def test_ollama_reports_usage_and_flags_parse_errors():
     with pytest.raises(InvalidModelOutput) as caught:
         models.generate("q?", [CHUNK])
     assert caught.value.usage == Usage(50, 9)
+
+
+def test_generation_schema_requires_answer_text_and_evidence(monkeypatch):
+    from openusd_assistant import adapters
+    from openusd_assistant.chat import answer_schema
+
+    assert answer_schema()["required"] == ["status", "answer", "evidence"]
+    seen = {}
+
+    class RecordingChat:
+        def __init__(self, **kwargs):
+            seen["init"] = kwargs
+
+        def with_structured_output(self, schema, **kwargs):
+            seen["schema"] = schema
+            return self
+
+    monkeypatch.setattr(adapters, "ChatOllama", RecordingChat)
+    OllamaModels(Settings(_env_file=None, ollama_reasoning=True))
+    assert seen["schema"]["required"] == ["status", "answer", "evidence"]
+    assert seen["init"]["num_ctx"] == 16384 and seen["init"]["reasoning"] is True

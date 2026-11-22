@@ -22,6 +22,7 @@ from .chat import (
     REASONING_MAX_TOKENS,
     SYSTEM_PROMPT,
     Usage,
+    answer_schema,
     invalid_output,
     user_message,
 )
@@ -93,7 +94,7 @@ class OllamaModels:
             # reasoning off before the JSON answer; 5 excerpts need far less than this.
             num_ctx=settings.ollama_num_ctx,
             client_kwargs=client_kwargs,
-        ).with_structured_output(DraftAnswer, method="json_schema", include_raw=True)
+        ).with_structured_output(answer_schema(), method="json_schema", include_raw=True)
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:
         if self.nomic_prefixes:

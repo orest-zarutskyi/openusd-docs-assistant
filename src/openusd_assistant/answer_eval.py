@@ -8,7 +8,7 @@ from pathlib import Path
 
 from .chat import Usage
 from .graph import _verified_answer
-from .models import Chunk, DependencyTimeout, DependencyUnavailable, InvalidModelOutput
+from .models import Chunk, DependencyTimeout, DependencyUnavailable, DraftAnswer, InvalidModelOutput
 from .questions import Question
 from .quotes import quote_in_text
 from .retrieval_eval import percentile
@@ -185,3 +185,28 @@ def choose_variants(results: dict[str, dict], answerable: int) -> dict[str, str]
         close = [s for s in specs if best - variant_score(results[s]) <= tolerance]
         chosen[model] = min(close, key=lambda s: results[s]["latency_ms"]["p50"] or float("inf"))
     return chosen
+
+
+def reverify(record: AnswerRecord) -> AnswerRecord:
+    """Re-apply the API's citation check to a saved answer without calling the model again."""
+    if record.outcome not in {ANSWER, INVALID_CITATION}:
+        return record
+    context = [
+        Chunk(
+            id=c["chunk_id"],
+            path=c["path"],
+            title="",
+            start_line=c["lines"][0],
+            end_line=c["lines"][1],
+            text=c["text"],
+            url="https://example.invalid/",
+        )
+        for c in record.context
+    ]
+    try:
+        draft = DraftAnswer(status="answer", answer=record.answer, evidence=record.quotes)
+        _verified_answer(draft, context)
+        outcome = ANSWER
+    except (InvalidModelOutput, ValueError):
+        outcome = INVALID_CITATION
+    return AnswerRecord(**{**asdict(record), "outcome": outcome})

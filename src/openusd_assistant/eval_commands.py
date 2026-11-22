@@ -282,3 +282,18 @@ def compare_variants(args) -> None:
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(report, encoding="utf-8", newline="\n")
     print(report)
+
+
+def reverify_answers(args) -> None:
+    from .answer_eval import reverify
+
+    for path in sorted(args.answers_dir.glob("*.jsonl")):
+        if path.name == "verdicts.jsonl":
+            continue
+        before = load_records(path)
+        after = [reverify(r) for r in before]
+        changed = [
+            (b.id, b.outcome, a.outcome) for b, a in zip(before, after) if b.outcome != a.outcome
+        ]
+        save_records(path, after)
+        print(f"{path.name}: {len(changed)} changed {changed}")

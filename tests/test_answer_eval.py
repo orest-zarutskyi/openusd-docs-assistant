@@ -246,3 +246,25 @@ def test_quote_level_validity_and_refusal_sources():
     assert records[0].outcome == INVALID_CITATION
     assert m["quote_validity"] == 0.5 and m["no_evidence_answers"] == 0
     assert m["unanswerable_reaching_model"] == 1 and m["model_refused_unanswerable"] == 1
+
+
+def test_reverify_applies_the_current_check_without_the_model():
+    from openusd_assistant.answer_eval import reverify
+
+    rendered = answer_question(
+        question(), lambda q: [CHUNK], Chat(draft(quote="deferred reference")), "m"
+    )
+    stale = with_changes(rendered, outcome=INVALID_CITATION)
+    assert reverify(stale).outcome == ANSWER
+    wrong = with_changes(rendered, outcome=ANSWER, quotes=[{"chunk_id": "c1", "quote": "lazy"}])
+    assert reverify(wrong).outcome == INVALID_CITATION
+    refused = answer_question(question(), lambda q: [], Chat(draft()), "m")
+    assert reverify(refused) is refused
+
+
+def with_changes(record, **changes):
+    from dataclasses import asdict
+
+    from openusd_assistant.answer_eval import AnswerRecord
+
+    return AnswerRecord(**{**asdict(record), **changes})

@@ -16,6 +16,7 @@ from .eval_commands import (
     compare_variants,
     generate_answers,
     judge_answers,
+    reverify_answers,
     write_label_template,
 )
 from .models import DependencyTimeout, DependencyUnavailable
@@ -136,6 +137,10 @@ def main() -> int:
     variants.add_argument("--answers-dir", type=Path, default=Path("reports/answers/dev"))
     variants.add_argument("--pricing", type=Path, default=Path("eval/pricing.json"))
     variants.add_argument("--report", type=Path, default=Path("reports/variants_dev.md"))
+    reverify = commands.add_parser(
+        "reverify-answers", help="Re-apply the citation check to saved answers."
+    )
+    reverify.add_argument("--answers-dir", type=Path, default=Path("reports/answers/dev"))
     calib = commands.add_parser("calibrate-judge", help="Compare judge verdicts to human labels.")
     calib.add_argument("--labels", type=Path, default=Path("eval/human_labels.jsonl"))
     calib.add_argument("--answers-dir", type=Path, default=Path("reports/answers/dev"))
@@ -177,6 +182,9 @@ def main() -> int:
             return 0
         if args.command == "label-answers":
             write_label_template(args)
+            return 0
+        if args.command == "reverify-answers":
+            reverify_answers(args)
             return 0
         if args.command == "compare-variants":
             compare_variants(args)
