@@ -9,31 +9,34 @@ MANIFEST = Manifest(
 )
 
 
-def make(id, kind="lookup", **extra):
+def make(id, kind="lookup", line=1, **extra):
     answerable = kind != "unanswerable"
     fields = dict(
         id=id,
         question=f"What does question {id} ask about USD?",
         kind=kind,
         answerable=answerable,
-        sources=[{"path": "docs/intro.rst", "start_line": 1, "end_line": 2}] if answerable else [],
+        sources=[{"path": "docs/intro.rst", "start_line": line, "end_line": line + 1}]
+        if answerable
+        else [],
         expected_facts=["A fact."] if answerable else [],
     )
     return Question.model_validate(fields | extra)
 
 
 def balanced(prefix):
+    line = 1 if prefix == "d" else 6  # dev and held-out cite different passages
     return [
         *(make(f"{prefix}-u{i}", "unanswerable") for i in range(5)),
-        *(make(f"{prefix}-p{i}", "paraphrase") for i in range(3)),
-        *(make(f"{prefix}-c{i}", "comparison") for i in range(2)),
+        *(make(f"{prefix}-p{i}", "paraphrase", line) for i in range(3)),
+        *(make(f"{prefix}-c{i}", "comparison", line) for i in range(2)),
     ]
 
 
 @pytest.fixture
 def source_dir(tmp_path):
     (tmp_path / "docs").mkdir()
-    (tmp_path / "docs/intro.rst").write_text("Intro\n=====\n\n\nText.\n", encoding="utf-8")
+    (tmp_path / "docs/intro.rst").write_text("Intro\n=====\n\n\nText.\nMore.\nEnd.\n", encoding="utf-8")
     return tmp_path
 
 
@@ -80,9 +83,26 @@ def test_set_errors_name_the_problem(source_dir):
 
 def test_minimum_counts_apply_to_each_set(source_dir):
     errors = validate_question_sets(
-        {"dev": balanced("d"), "heldout": [make("h1")]}, MANIFEST, source_dir
+        {"dev": balanced("d"), "heldout": [make("h1", line=6)]}, MANIFEST, source_dir
     )["errors"]
     assert errors == [
         "heldout: needs at least 5 unanswerable questions",
         "heldout: needs at least 5 paraphrase/comparison questions",
     ]
+
+
+def test_overlapping_passages_across_sets_are_reported(source_dir):
+    span = [{"path": "docs/intro.rst", "start_line": 2, "end_line": 5}]
+    dev = balanced("d") + [make("dev-span", sources=span)]
+    heldout = balanced("h") + [make("held-span", kind="paraphrase")]
+    errors = validate_question_sets({"dev": dev, "heldout": heldout}, MANIFEST, source_dir)[
+        "errors"
+    ]
+    # balanced() questions all cite lines 1-2, so every dev/held-out pair overlaps too.
+    assert "dev: dev-span shares a passage with heldout: held-span" in errors
+    apart = [make("far", sources=[{"path": "docs/intro.rst", "start_line": 5, "end_line": 5}])]
+    only_dev_spans = {"dev": balanced("d") + apart, "heldout": [make("h-u", "unanswerable")]}
+    assert not any(
+        "shares a passage" in e
+        for e in validate_question_sets(only_dev_spans, MANIFEST, source_dir)["errors"]
+    )

@@ -100,7 +100,25 @@ def validate_question_sets(
             },
             "uncertain": sum(q.uncertain is not None for q in questions),
         }
+    errors.extend(_shared_passages(sets))
     return {"sets": summary, "errors": errors}
+
+
+def _shared_passages(sets: dict[str, list[Question]]) -> list[str]:
+    """Report source spans that overlap across sets: tuning on one would see the other."""
+    spans = [
+        (name, q.id, span)
+        for name, questions in sets.items()
+        for q in questions
+        for span in q.sources
+    ]
+    errors = []
+    for i, (name, qid, span) in enumerate(spans):
+        for other_name, other_id, other in spans[i + 1 :]:
+            if other_name != name and other.path == span.path:
+                if span.start_line <= other.end_line and other.start_line <= span.end_line:
+                    errors.append(f"{name}: {qid} shares a passage with {other_name}: {other_id}")
+    return errors
 
 
 def dump_questions(questions: list[Question]) -> str:
