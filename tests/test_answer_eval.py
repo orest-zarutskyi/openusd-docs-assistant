@@ -190,7 +190,7 @@ def test_label_template_balances_models_and_hides_order():
     models = [label["record"]["model"] for label in labels]
     assert len(labels) == 20
     assert sorted(models.count(m) for m in "abc") == [6, 7, 7]
-    assert labels[0]["human"] == {"facts_covered": [None], "fully_grounded": None, "notes": ""}
+    assert labels[0]["reference"] == {"facts_covered": [None], "fully_grounded": None, "notes": ""}
     assert labels[0]["excerpts"][0]["source"] == "docs/intro.rst#L3-L4"
     assert label_template(records, qs, n=20) == labels  # seeded, reproducible
 
@@ -202,12 +202,12 @@ def test_cohen_kappa_and_calibration():
         {
             "label_id": "L01",
             "record": {"id": "a", "model": "m"},
-            "human": {"facts_covered": [True, False], "fully_grounded": True},
+            "reference": {"facts_covered": [True, False], "fully_grounded": True},
         },
         {
             "label_id": "L02",
             "record": {"id": "b", "model": "m"},
-            "human": {"facts_covered": [True], "fully_grounded": False},
+            "reference": {"facts_covered": [True], "fully_grounded": False},
         },
     ]
     verdicts = {
@@ -217,8 +217,8 @@ def test_cohen_kappa_and_calibration():
     result = calibrate(labels, verdicts)
     assert result["facts"]["agreement"] == pytest.approx(2 / 3)
     assert result["fully_grounded"]["agreement"] == 1.0
-    assert result["disagreements"] == ["L01: fact 2 human=False judge=True"]
-    labels[0]["human"]["fully_grounded"] = None
+    assert result["disagreements"] == ["L01: fact 2 reference=False judge=True"]
+    labels[0]["reference"]["fully_grounded"] = None
     with pytest.raises(ValueError, match="L01 is not fully labelled"):
         calibrate(labels, verdicts)
 

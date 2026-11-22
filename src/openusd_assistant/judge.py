@@ -1,4 +1,4 @@
-"""LLM-judge scoring of answers and its calibration against human labels."""
+"""LLM-judge scoring of answers and its calibration against reference labels."""
 
 import hashlib
 import json
@@ -117,7 +117,7 @@ def judge_metrics(records: Sequence[AnswerRecord], verdicts: dict[str, Verdict |
 def label_template(
     records: Sequence[AnswerRecord], questions: dict[str, Question], n: int = 20, seed: int = 2608
 ) -> list[dict]:
-    """Sample answered records evenly across models for blind human labelling."""
+    """Sample answered records evenly across models for blind reference labelling."""
     answered = [r for r in records if r.outcome == ANSWER and r.answerable]
     by_model: dict[str, list[AnswerRecord]] = {}
     for r in answered:
@@ -142,7 +142,7 @@ def label_template(
                 for c in r.context
             ],
             "expected_facts": questions[r.id].expected_facts,
-            "human": {
+            "reference": {
                 "facts_covered": [None] * len(questions[r.id].expected_facts),
                 "fully_grounded": None,
                 "notes": "",
@@ -162,29 +162,35 @@ def cohen_kappa(a: Sequence[bool], b: Sequence[bool]) -> float | None:
 
 
 def calibrate(labels: Sequence[dict], verdicts: dict[tuple[str, str], Verdict | None]) -> dict:
-    """Agreement between human labels and the judge on fact coverage and full groundedness."""
-    human_facts, judge_facts, human_grounded, judge_grounded, disagreements = [], [], [], [], []
+    """Agreement between reference labels and the judge on fact coverage and full groundedness."""
+    reference_facts, judge_facts, reference_grounded, judge_grounded, disagreements = (
+        [],
+        [],
+        [],
+        [],
+        [],
+    )
     for label in labels:
-        human = label["human"]
-        if human["fully_grounded"] is None or None in human["facts_covered"]:
+        reference = label["reference"]
+        if reference["fully_grounded"] is None or None in reference["facts_covered"]:
             raise ValueError(f"{label['label_id']} is not fully labelled")
         key = (label["record"]["model"], label["record"]["id"])
         verdict = verdicts.get(key)
         if verdict is None:
             disagreements.append(f"{label['label_id']}: judge produced no verdict")
             continue
-        human_facts += human["facts_covered"]
+        reference_facts += reference["facts_covered"]
         judge_facts += [f.covered for f in verdict.facts]
-        human_grounded.append(human["fully_grounded"])
+        reference_grounded.append(reference["fully_grounded"])
         judge_grounded.append(verdict.fully_grounded)
-        if human["fully_grounded"] != verdict.fully_grounded:
+        if reference["fully_grounded"] != verdict.fully_grounded:
             disagreements.append(
-                f"{label['label_id']}: grounded human={human['fully_grounded']} judge={verdict.fully_grounded}"
+                f"{label['label_id']}: grounded reference={reference['fully_grounded']} judge={verdict.fully_grounded}"
             )
-        for i, (h, j) in enumerate(zip(human["facts_covered"], verdict.facts, strict=True)):
+        for i, (h, j) in enumerate(zip(reference["facts_covered"], verdict.facts, strict=True)):
             if h != j.covered:
                 disagreements.append(
-                    f"{label['label_id']}: fact {i + 1} human={h} judge={j.covered}"
+                    f"{label['label_id']}: fact {i + 1} reference={h} judge={j.covered}"
                 )
 
     def agreement(a, b):
@@ -193,14 +199,14 @@ def calibrate(labels: Sequence[dict], verdicts: dict[tuple[str, str], Verdict | 
     return {
         "labels": len(labels),
         "facts": {
-            "n": len(human_facts),
-            "agreement": agreement(human_facts, judge_facts),
-            "kappa": cohen_kappa(human_facts, judge_facts),
+            "n": len(reference_facts),
+            "agreement": agreement(reference_facts, judge_facts),
+            "kappa": cohen_kappa(reference_facts, judge_facts),
         },
         "fully_grounded": {
-            "n": len(human_grounded),
-            "agreement": agreement(human_grounded, judge_grounded),
-            "kappa": cohen_kappa(human_grounded, judge_grounded),
+            "n": len(reference_grounded),
+            "agreement": agreement(reference_grounded, judge_grounded),
+            "kappa": cohen_kappa(reference_grounded, judge_grounded),
         },
         "disagreements": disagreements,
     }

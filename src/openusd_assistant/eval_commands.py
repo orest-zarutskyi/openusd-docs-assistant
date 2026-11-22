@@ -197,14 +197,18 @@ def answers_report(results: dict[str, dict], args, judge: Judge, judge_cost: flo
 
 def write_label_template(args) -> None:
     if args.out.exists():
-        raise ValueError(f"{args.out} exists; refusing to overwrite human labels")
+        raise ValueError(f"{args.out} exists; refusing to overwrite labels")
     questions = {q.id: q for q in load_questions(args.questions)}
+    wanted = set(args.models.split(",")) if args.models else None
     records = [
         r
         for f in sorted(args.answers_dir.glob("*.jsonl"))
         if f.name != "verdicts.jsonl"
         for r in load_records(f)
+        if wanted is None or r.model in wanted
     ]
+    if wanted and {r.model for r in records} != wanted:
+        raise ValueError(f"No answers found for {sorted(wanted - {r.model for r in records})}")
     labels = label_template(records, questions, n=args.n)
     args.out.parent.mkdir(parents=True, exist_ok=True)
     args.out.write_text(
