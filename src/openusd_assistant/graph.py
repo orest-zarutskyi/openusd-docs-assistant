@@ -5,6 +5,7 @@ from langgraph.graph import END, START, StateGraph
 from pydantic import ValidationError
 
 from .models import AskResponse, Chunk, DraftAnswer, InvalidModelOutput, Source
+from .quotes import quote_in_text
 
 Retriever = Callable[[str], list[Chunk]]
 Generator = Callable[[str, list[Chunk]], DraftAnswer]
@@ -38,8 +39,8 @@ def _verified_answer(draft: DraftAnswer, context: list[Chunk]) -> AskResponse:
     sources = []
     for evidence in draft.evidence:
         chunk = chunks.get(evidence.chunk_id)
-        normalized_quote = " ".join(evidence.quote.split())
-        if chunk is None or normalized_quote not in " ".join(chunk.text.split()):
+        # Markup-insensitive but word-exact: see quotes.normalize_rst.
+        if chunk is None or not quote_in_text(evidence.quote, chunk.text):
             raise InvalidModelOutput()
 
         sources.append(

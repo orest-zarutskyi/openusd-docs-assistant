@@ -10,6 +10,7 @@ from .chat import Usage
 from .graph import _verified_answer
 from .models import Chunk, DependencyTimeout, DependencyUnavailable, InvalidModelOutput
 from .questions import Question
+from .quotes import quote_in_text
 from .retrieval_eval import percentile
 
 # Outcomes of one question. Refusals can come from the retrieval gate or the model.
@@ -117,9 +118,9 @@ def rate(numerator: int, denominator: int) -> float | None:
 
 
 def quote_is_valid(quote: dict, record: AnswerRecord) -> bool:
-    """The same whitespace-insensitive check as the API, applied to one quote."""
+    """The same check as the API, applied to one quote."""
     text = next((c["text"] for c in record.context if c["chunk_id"] == quote["chunk_id"]), None)
-    return text is not None and " ".join(quote["quote"].split()) in " ".join(text.split())
+    return text is not None and quote_in_text(quote["quote"], text)
 
 
 def answer_metrics(records: Sequence[AnswerRecord], price: Price) -> dict:
