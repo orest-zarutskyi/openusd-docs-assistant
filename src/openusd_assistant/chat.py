@@ -16,6 +16,8 @@ for each material claim. Copy quotes from the excerpt text. Never invent evidenc
 
 # Answers are a few sentences plus short quotes; the cap bounds cost and latency.
 MAX_OUTPUT_TOKENS = 800
+# Room for the model's reasoning plus the answer when thinking is on.
+REASONING_MAX_TOKENS = 6144
 
 
 @dataclass(frozen=True)

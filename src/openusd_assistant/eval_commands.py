@@ -12,10 +12,28 @@ from .retrieval_eval import percentile
 
 
 def parse_model(spec: str) -> tuple[str, str]:
-    provider, _, model = spec.partition(":")
+    """Split ``provider:model[@variant]`` into provider and model ID (variant dropped)."""
+    provider, _, rest = spec.partition(":")
+    model = rest.partition("@")[0]
     if provider not in {"ollama", "gemini"} or not model:
         raise ValueError(f"Model must look like ollama:<tag> or gemini:<id>, not {spec!r}")
     return provider, model
+
+
+def variant_settings(spec: str) -> dict:
+    """Settings for a variant: ollama ``@think``/``@nothink``; gemini ``@budget=N``/``@level=X``."""
+    provider, _ = parse_model(spec)
+    variant = spec.partition("@")[2]
+    if not variant:
+        return {}
+    if provider == "ollama" and variant in {"think", "nothink"}:
+        return {"ollama_reasoning": variant == "think"}
+    key, _, value = variant.partition("=")
+    if provider == "gemini" and key == "budget" and value.lstrip("-").isdigit():
+        return {"gemini_thinking_budget": int(value), "gemini_thinking_level": None}
+    if provider == "gemini" and key == "level" and value:
+        return {"gemini_thinking_level": value, "gemini_thinking_budget": None}
+    raise ValueError(f"Unknown variant {variant!r} for {spec!r}")
 
 
 def slug(model_spec: str) -> str:
@@ -24,11 +42,11 @@ def slug(model_spec: str) -> str:
 
 def chat_for(spec: str, settings, ollama_models_factory):
     provider, model = parse_model(spec)
+    options = variant_settings(spec)
     if provider == "gemini":
-        return GeminiChat(
-            settings.model_copy(update={"chat_provider": "gemini", "gemini_model": model})
-        )
-    return ollama_models_factory(settings.model_copy(update={"chat_model": model}))
+        update = {"chat_provider": "gemini", "gemini_model": model} | options
+        return GeminiChat(settings.model_copy(update=update))
+    return ollama_models_factory(settings.model_copy(update={"chat_model": model} | options))
 
 
 def load_prices(path: Path) -> dict[str, Price]:
@@ -207,3 +225,43 @@ def calibrate_judge(args) -> None:
         for key, row in cache.items()
     }
     print(json.dumps(calibrate(labels, verdicts), indent=2))
+
+
+def compare_variants(args) -> None:
+    """Pick each model's reasoning variant on dev with the judge-free rule."""
+    from .answer_eval import choose_variants, variant_score
+
+    questions = load_questions(args.questions)
+    answerable = sum(q.answerable for q in questions)
+    files = [f for f in sorted(args.answers_dir.glob("*.jsonl")) if f.name != "verdicts.jsonl"]
+    runs = {load_records(f)[0].model: load_records(f) for f in files}
+    prices = load_prices(args.pricing)
+    results = {spec: answer_metrics(recs, price_for(spec, prices)) for spec, recs in runs.items()}
+    chosen = choose_variants(results, answerable)
+
+    def pct(value):
+        return "—" if value is None else f"{value:.0%}"
+
+    lines = [
+        f"# Reasoning variants: {args.questions.as_posix()}",
+        "",
+        "Rule, fixed before the runs: per model, the highest score = (answerable questions "
+        "answered with valid citations + correct refusals) / 2; variants within one answerable "
+        "question of the best are decided by lower p50 latency. No judge output is used.",
+        "",
+        "| Variant | Answered (valid citations) | Correct refusals | False refusals | "
+        "Invalid output | Citations valid | Score | p50 s | p95 s | Chosen |",
+        "| --- |" + " --- |" * 9,
+    ]
+    for spec, r in results.items():
+        mark = "yes" if spec in chosen.values() else ""
+        lines.append(
+            f"| `{spec}` | {pct(r['answered_answerable'])} | {pct(r['correct_refusal'])} | "
+            f"{pct(r['false_refusal'])} | {pct(r['invalid_output'])} | {pct(r['citation_validity'])} | "
+            f"{variant_score(r):.3f} | {r['latency_ms']['p50'] / 1000:.1f} | "
+            f"{r['latency_ms']['p95'] / 1000:.1f} | {mark} |"
+        )
+    report = "\n".join(lines) + "\n"
+    args.report.parent.mkdir(parents=True, exist_ok=True)
+    args.report.write_text(report, encoding="utf-8", newline="\n")
+    print(report)

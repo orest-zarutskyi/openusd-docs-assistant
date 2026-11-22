@@ -17,7 +17,14 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 from qdrant_client import QdrantClient, models
 from qdrant_client.http.exceptions import ResponseHandlingException, UnexpectedResponse
 
-from .chat import SYSTEM_PROMPT, Usage, invalid_output, user_message
+from .chat import (
+    MAX_OUTPUT_TOKENS,
+    REASONING_MAX_TOKENS,
+    SYSTEM_PROMPT,
+    Usage,
+    invalid_output,
+    user_message,
+)
 from .models import Chunk, DependencyTimeout, DependencyUnavailable, DraftAnswer, InvalidModelOutput
 from .retrieval import Mode, SearchResult
 
@@ -52,6 +59,9 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr | None = None  # read from .env only; never logged
     gemini_thinking_budget: int | None = None
     gemini_thinking_level: str | None = None
+    # Qwen3-family "thinking"; chosen per model on dev (reports/answers_dev.md).
+    ollama_reasoning: bool = False
+    ollama_num_ctx: int = Field(default=16384, ge=4096, le=131072)
     # LLM judge for answer evaluation; must not be one of the compared models.
     judge_model: str = ""
 
@@ -76,8 +86,12 @@ class OllamaModels:
             model=settings.chat_model,
             base_url=settings.ollama_url,
             temperature=0,
-            reasoning=False,
-            num_predict=800,
+            reasoning=settings.ollama_reasoning,
+            # Thinking tokens count against num_predict, so reasoning needs a larger budget.
+            num_predict=REASONING_MAX_TOKENS if settings.ollama_reasoning else MAX_OUTPUT_TOKENS,
+            # Ollama's default 4096-token window silently truncates long prompts and cuts
+            # reasoning off before the JSON answer; 5 excerpts need far less than this.
+            num_ctx=settings.ollama_num_ctx,
             client_kwargs=client_kwargs,
         ).with_structured_output(DraftAnswer, method="json_schema", include_raw=True)
 

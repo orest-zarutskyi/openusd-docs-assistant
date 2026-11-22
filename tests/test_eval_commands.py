@@ -33,3 +33,74 @@ def test_chat_for_overrides_only_the_model():
     gemini = chat_for("gemini:gemini-test", settings, None)
     assert isinstance(gemini, GeminiChat) and gemini.model == "gemini-test"
     assert settings.chat_model == "base"  # the shared settings are not mutated
+
+
+def test_variants_parse_into_settings():
+    from openusd_assistant.eval_commands import variant_settings
+
+    assert parse_model("ollama:qwen3:4b@think") == ("ollama", "qwen3:4b")
+    assert variant_settings("ollama:qwen3:4b@think") == {"ollama_reasoning": True}
+    assert variant_settings("ollama:qwen3:4b@nothink") == {"ollama_reasoning": False}
+    assert variant_settings("gemini:g@budget=0")["gemini_thinking_budget"] == 0
+    assert variant_settings("gemini:g@level=low")["gemini_thinking_level"] == "low"
+    assert variant_settings("gemini:g") == {}
+    for bad in ("ollama:q@budget=1", "gemini:g@think", "gemini:g@budget=x"):
+        with pytest.raises(ValueError):
+            variant_settings(bad)
+    seen = []
+    chat_for("ollama:q:4b@think", Settings(_env_file=None), seen.append)
+    assert seen[0].ollama_reasoning is True and seen[0].chat_model == "q:4b"
+
+
+def test_choose_variants_prefers_score_then_latency():
+    from openusd_assistant.answer_eval import choose_variants
+
+    def m(answered, refused, p50):
+        return {
+            "answered_answerable": answered,
+            "correct_refusal": refused,
+            "latency_ms": {"p50": p50},
+        }
+
+    results = {
+        "ollama:a@nothink": m(0.0, 1.0, 1000),
+        "ollama:a@think": m(0.8, 1.0, 9000),
+        "ollama:b@nothink": m(0.60, 1.0, 2000),
+        "ollama:b@think": m(0.64, 1.0, 9000),  # +1 of 25 answerable: within tolerance
+    }
+    chosen = choose_variants(results, answerable=25)
+    assert chosen == {"ollama:a": "ollama:a@think", "ollama:b": "ollama:b@nothink"}
+
+
+def test_compare_variants_writes_a_report(tmp_path):
+    from types import SimpleNamespace
+
+    from openusd_assistant.answer_eval import AnswerRecord, save_records
+    from openusd_assistant.eval_commands import compare_variants
+
+    questions = tmp_path / "questions.jsonl"
+    questions.write_text(
+        '{"id":"a","question":"What is a payload in USD?","kind":"lookup","answerable":true,'
+        '"sources":[{"path":"docs/x.rst","start_line":1,"end_line":1}],"expected_facts":["F."]}\n'
+        '{"id":"u","question":"What does Pyro need here?","kind":"unanswerable","answerable":false}\n',
+        encoding="utf-8",
+    )
+    answers = tmp_path / "answers"
+    for spec, outcome, ms in (
+        ("ollama:m@nothink", "refused_model", 100),
+        ("ollama:m@think", "answer", 900),
+    ):
+        save_records(
+            answers / f"{spec.replace(':', '_').replace('@', '_')}.jsonl",
+            [
+                AnswerRecord("a", "lookup", True, spec, outcome, latency_ms=ms),
+                AnswerRecord("u", "unanswerable", False, spec, "refused_retrieval", latency_ms=ms),
+            ],
+        )
+    report = tmp_path / "variants.md"
+    args = SimpleNamespace(
+        questions=questions, answers_dir=answers, pricing=Path("eval/pricing.json"), report=report
+    )
+    compare_variants(args)
+    text = report.read_text(encoding="utf-8")
+    assert "| `ollama:m@think` | 100% | 100% | 0% |" in text and text.count("| yes |") == 1

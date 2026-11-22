@@ -146,3 +146,26 @@ def answer_metrics(records: Sequence[AnswerRecord], price: Price) -> dict:
         if records
         else None,
     }
+
+
+def variant_score(metrics: dict) -> float:
+    """Balanced accuracy: answerable questions answered with valid citations, and correct refusals."""
+    return ((metrics["answered_answerable"] or 0) + (metrics["correct_refusal"] or 0)) / 2
+
+
+def choose_variants(results: dict[str, dict], answerable: int) -> dict[str, str]:
+    """Pre-registered rule: per model, highest ``variant_score``; variants within one
+    answerable question of the best are decided by lower p50 latency.
+
+    The rule uses no judge output, so tuning settings cannot bias the judge's calibration.
+    """
+    by_model: dict[str, list[str]] = {}
+    for spec in results:
+        by_model.setdefault(spec.partition("@")[0], []).append(spec)
+    tolerance = 1 / (2 * answerable) + 1e-9
+    chosen = {}
+    for model, specs in by_model.items():
+        best = max(variant_score(results[s]) for s in specs)
+        close = [s for s in specs if best - variant_score(results[s]) <= tolerance]
+        chosen[model] = min(close, key=lambda s: results[s]["latency_ms"]["p50"] or float("inf"))
+    return chosen

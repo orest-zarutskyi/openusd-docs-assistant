@@ -11,7 +11,13 @@ from .adapters import OllamaModels, QdrantIndex, Settings, connect_qdrant
 from .api import create_app
 from .chat import make_chat
 from .corpus import fetch_chunks, load_manifest
-from .eval_commands import calibrate_judge, generate_answers, judge_answers, write_label_template
+from .eval_commands import (
+    calibrate_judge,
+    compare_variants,
+    generate_answers,
+    judge_answers,
+    write_label_template,
+)
 from .models import DependencyTimeout, DependencyUnavailable
 from .questions import load_questions, validate_question_sets
 from .retrieval import (
@@ -125,6 +131,11 @@ def main() -> int:
     labels.add_argument("--answers-dir", type=Path, default=Path("reports/answers/dev"))
     labels.add_argument("--out", type=Path, default=Path("eval/human_labels.jsonl"))
     labels.add_argument("-n", type=int, default=20)
+    variants = commands.add_parser("compare-variants", help="Pick reasoning variants on dev.")
+    variants.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))
+    variants.add_argument("--answers-dir", type=Path, default=Path("reports/answers/dev"))
+    variants.add_argument("--pricing", type=Path, default=Path("eval/pricing.json"))
+    variants.add_argument("--report", type=Path, default=Path("reports/variants_dev.md"))
     calib = commands.add_parser("calibrate-judge", help="Compare judge verdicts to human labels.")
     calib.add_argument("--labels", type=Path, default=Path("eval/human_labels.jsonl"))
     calib.add_argument("--answers-dir", type=Path, default=Path("reports/answers/dev"))
@@ -166,6 +177,9 @@ def main() -> int:
             return 0
         if args.command == "label-answers":
             write_label_template(args)
+            return 0
+        if args.command == "compare-variants":
+            compare_variants(args)
             return 0
         if args.command == "calibrate-judge":
             calibrate_judge(args)
