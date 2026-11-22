@@ -15,6 +15,10 @@ _DOCUMENT = re.compile(r"docs/(?:[A-Za-z0-9_]+/)*[A-Za-z0-9_]+\.rst")
 _NOTICES = {"LICENSE.txt", "NOTICE.txt"}
 _MAX_SOURCE_BYTES = 2 * 1024 * 1024
 _HEADING_RULE = re.compile(r"([=!~^`#*+_.:\-])\1{2,}")
+_LABEL = re.compile(r"\.\. _[^:]+:\s*")
+# Directives whose bodies are site plumbing rather than documentation text.
+_SKIPPED_DIRECTIVE = re.compile(r"\.\. (?:raw|include|contents|toctree)::")
+_CODE_DIRECTIVE = re.compile(r"\.\. (?:code-block|code|sourcecode)::")
 
 
 @dataclass(frozen=True)
@@ -91,15 +95,15 @@ def split_document(
 ) -> list[Chunk]:
     """Split on headings and top-level paragraphs, preserving source line ranges."""
     lines = text.splitlines()
-    headings = _headings(lines)
+    headings, structure = _headings(lines)
     headings.setdefault(0, file.title)
     starts = [*sorted(headings), len(lines)]
     chunks = []
     for start, end in zip(starts, starts[1:]):
         title = headings[start]
         for first, stop in _paragraph_chunks(lines, start, end, chunk_chars):
-            source = lines[first:stop]
-            if not any(line.strip() and not line.startswith(".. include::") for line in source):
+            # A heading, its labels and include lines alone are not retrievable text.
+            if all(i in structure or not lines[i].strip() for i in range(first, stop)):
                 continue
             start_line, end_line = first + 1, stop
             url = f"https://github.com/{_REPOSITORY}/blob/{commit}/{file.path}#L{start_line}-L{end_line}"
@@ -110,39 +114,68 @@ def split_document(
                     title=title,
                     start_line=start_line,
                     end_line=end_line,
-                    text="\n".join(source),
+                    text="\n".join(lines[first:stop]),
                     url=url,
                 )
             )
     return chunks
 
 
-def _headings(lines: list[str]) -> dict[int, str]:
-    result = {}
+def _headings(lines: list[str]) -> tuple[dict[int, str], set[int]]:
+    """Return heading start lines with titles, and the lines that only carry structure."""
+    headings = {}
+    structure = {
+        i
+        for i, line in enumerate(lines)
+        if _LABEL.fullmatch(line)
+        or _HEADING_RULE.fullmatch(line)  # transitions such as ----
+        or line.startswith((".. include::", ".. contents::"))
+    }
     for i, (line, underline) in enumerate(zip(lines, lines[1:])):
         if not line or line[0].isspace() or line.startswith(".. ") or _HEADING_RULE.fullmatch(line):
             continue
         if len(underline) < len(line) or not _HEADING_RULE.fullmatch(underline):
             continue
         start = i - 1 if i > 0 and lines[i - 1] == underline else i
-        result[start] = line
-    return result
+        structure.update(range(start, i + 2))
+        headings[_label_start(lines, start)] = line
+    return headings, structure
+
+
+def _label_start(lines: list[str], start: int) -> int:
+    """Move a heading start up to the ``.. _target:`` labels that name it."""
+    first = start
+    i = start - 1
+    while i >= 0 and (not lines[i].strip() or _LABEL.fullmatch(lines[i])):
+        if lines[i].strip():
+            first = i
+        i -= 1
+    return first
 
 
 def _paragraph_chunks(
     lines: list[str], start: int, end: int, chunk_chars: int
 ) -> list[tuple[int, int]]:
     boundaries = [start]
+    previous = ""
     for i in range(start + 1, end):
+        if lines[i - 1].strip():
+            previous = lines[i - 1]
+        # A ``.. _target:`` label stays in the same block as the text it names.
         if not lines[i - 1].strip() and lines[i] and not lines[i][0].isspace():
-            boundaries.append(i)
+            if not _LABEL.fullmatch(previous):
+                boundaries.append(i)
     boundaries.append(end)
 
     sections = []
     chunk_start, size = start, 0
     for left, right in zip(boundaries, boundaries[1:]):
+        if _SKIPPED_DIRECTIVE.match(lines[left]):
+            sections.append((chunk_start, left))
+            chunk_start, size = right, 0
+            continue
         block_size = sum(len(line) + 1 for line in lines[left:right])
-        if size and size + block_size > chunk_chars:
+        if size and size + block_size > chunk_chars and not _keeps_with_previous(lines, left):
             sections.append((chunk_start, left))
             chunk_start, size = left, 0
         size += block_size
@@ -157,3 +190,13 @@ def _paragraph_chunks(
         if left < right:
             trimmed.append((left, right))
     return trimmed
+
+
+def _keeps_with_previous(lines: list[str], left: int) -> bool:
+    """Keep code with its lead-in paragraph, and a heading with its first block."""
+    if _CODE_DIRECTIVE.match(lines[left]):
+        return True
+    previous = next((line for line in reversed(lines[:left]) if line.strip()), "")
+    if _HEADING_RULE.fullmatch(previous):
+        return True
+    return previous.rstrip().endswith("::") and not previous.lstrip().startswith("..")
