@@ -261,6 +261,23 @@ def compare_variants(args) -> None:
             f"{variant_score(r):.3f} | {r['latency_ms']['p50'] / 1000:.1f} | "
             f"{r['latency_ms']['p95'] / 1000:.1f} | {mark} |"
         )
+    lines += [
+        "",
+        "## Why citations fail",
+        "",
+        "An answer counts only if every quote is verbatim in its chunk, as the API requires. "
+        "Quote validity counts quotes one by one.",
+        "",
+        "| Variant | Claimed answers | Quotes verbatim | Answers without quotes | "
+        "Unanswerable reaching the model | Refused by the model |",
+        "| --- | --- | --- | --- | --- | --- |",
+    ]
+    for spec, r in results.items():
+        claimed = sum(1 for rec in runs[spec] if rec.outcome in {"answer", "invalid_citation"})
+        lines.append(
+            f"| `{spec}` | {claimed} | {pct(r['quote_validity'])} | {r['no_evidence_answers']} | "
+            f"{r['unanswerable_reaching_model']} | {r['model_refused_unanswerable']} |"
+        )
     report = "\n".join(lines) + "\n"
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(report, encoding="utf-8", newline="\n")

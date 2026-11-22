@@ -116,6 +116,12 @@ def rate(numerator: int, denominator: int) -> float | None:
     return numerator / denominator if denominator else None
 
 
+def quote_is_valid(quote: dict, record: AnswerRecord) -> bool:
+    """The same whitespace-insensitive check as the API, applied to one quote."""
+    text = next((c["text"] for c in record.context if c["chunk_id"] == quote["chunk_id"]), None)
+    return text is not None and " ".join(quote["quote"].split()) in " ".join(text.split())
+
+
 def answer_metrics(records: Sequence[AnswerRecord], price: Price) -> dict:
     """Metrics that need no judge: citations, refusals, failures, latency and cost."""
     answerable = [r for r in records if r.answerable]
@@ -127,9 +133,18 @@ def answer_metrics(records: Sequence[AnswerRecord], price: Price) -> dict:
         "questions": len(records),
         # Of the answers the model claimed, the share whose every quote is in the context.
         "citation_validity": rate(sum(r.outcome == ANSWER for r in claimed), len(claimed)),
+        # Of all quotes in claimed answers, the share found verbatim in the quoted chunk.
+        "quote_validity": rate(
+            sum(quote_is_valid(q, r) for r in claimed for q in r.quotes),
+            sum(len(r.quotes) for r in claimed),
+        ),
+        "no_evidence_answers": sum(not r.quotes for r in claimed),
         "correct_refusal": rate(
             sum(r.outcome in REFUSALS for r in unanswerable), len(unanswerable)
         ),
+        # Unanswerable questions that reached the model, and how many of those it refused.
+        "unanswerable_reaching_model": sum(r.outcome != REFUSED_RETRIEVAL for r in unanswerable),
+        "model_refused_unanswerable": sum(r.outcome == REFUSED_MODEL for r in unanswerable),
         "false_refusal": rate(sum(r.outcome in REFUSALS for r in answerable), len(answerable)),
         "answered_answerable": rate(sum(r.outcome == ANSWER for r in answerable), len(answerable)),
         "invalid_output": rate(sum(r.outcome == INVALID_OUTPUT for r in generated), len(generated)),

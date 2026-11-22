@@ -221,3 +221,28 @@ def test_cohen_kappa_and_calibration():
     labels[0]["human"]["fully_grounded"] = None
     with pytest.raises(ValueError, match="L01 is not fully labelled"):
         calibrate(labels, verdicts)
+
+
+def test_quote_level_validity_and_refusal_sources():
+    two_quotes = DraftAnswer(
+        status="answer",
+        answer="Use a payload.",
+        evidence=[
+            {"chunk_id": "c1", "quote": "deferred   reference"},  # whitespace differs: valid
+            {"chunk_id": "c1", "quote": "lazy reference"},
+        ],
+    )
+    records = [
+        answer_question(question("a1"), lambda q: [CHUNK], Chat(two_quotes), "m"),
+        answer_question(question("u1", False), lambda q: [], Chat(draft()), "m"),
+        answer_question(
+            question("u2", False),
+            lambda q: [CHUNK],
+            Chat(draft(status="insufficient_context")),
+            "m",
+        ),
+    ]
+    m = answer_metrics(records, Price())
+    assert records[0].outcome == INVALID_CITATION
+    assert m["quote_validity"] == 0.5 and m["no_evidence_answers"] == 0
+    assert m["unanswerable_reaching_model"] == 1 and m["model_refused_unanswerable"] == 1
