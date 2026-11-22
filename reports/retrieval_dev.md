@@ -1,6 +1,6 @@
 # Retrieval: eval/questions.jsonl
 
-- Date: 2026-11-22; code commit `e5caa9d` (with uncommitted changes).
+- Date: 2026-11-22; code commit `cad2556`.
 - Corpus: OpenUSD v26.08 `ee47c679abde`, 76 documents, 952 chunks.
 - Questions: `eval/questions.jsonl`, 32 total: 3 comparison, 19 lookup, 4 paraphrase, 6 unanswerable.
 - Dense: `nomic-embed-text:v1.5` (digest `0a109f422b47`) on Ollama 0.40.16, embedded Qdrant, cosine similarity.
@@ -11,11 +11,11 @@ Relevance: a chunk is relevant if it shares a line with an expected source span.
 
 | Mode | hit@5 | MRR@5 | nDCG@10 | hit@5 strict | p50 ms | p95 ms |
 | --- | --- | --- | --- | --- | --- | --- |
-| bm25 | 0.846 | 0.801 | 0.817 | 0.808 | 2 | 3 |
-| dense | 0.846 | 0.732 | 0.784 | 0.808 | 15 | 16 |
-| hybrid | 0.962 | 0.780 | 0.829 | 0.923 | 17 | 19 |
-| hybrid-rerank (ms-marco-MiniLM-L-6-v2) **(winner)** | 0.923 | 0.803 | 0.841 | 0.885 | 526 | 531 |
-| hybrid-rerank (bge-reranker-base) | 0.962 | 0.790 | 0.849 | 0.923 | 2546 | 2579 |
+| bm25 | 0.846 | 0.801 | 0.817 | 0.808 | 1 | 2 |
+| dense | 0.846 | 0.732 | 0.784 | 0.808 | 14 | 17 |
+| hybrid | 0.962 | 0.780 | 0.829 | 0.923 | 16 | 18 |
+| hybrid-rerank (ms-marco-MiniLM-L-6-v2) **(winner)** | 0.923 | 0.803 | 0.841 | 0.885 | 544 | 594 |
+| hybrid-rerank (bge-reranker-base) | 0.962 | 0.790 | 0.849 | 0.923 | 2592 | 2642 |
 
 Winner rule, fixed before the run: highest nDCG@10; modes within 0.01 of it are decided by the lower p95 latency.
 
