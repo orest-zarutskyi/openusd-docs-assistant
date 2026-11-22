@@ -36,7 +36,9 @@ def balanced(prefix):
 @pytest.fixture
 def source_dir(tmp_path):
     (tmp_path / "docs").mkdir()
-    (tmp_path / "docs/intro.rst").write_text("Intro\n=====\n\n\nText.\nMore.\nEnd.\n", encoding="utf-8")
+    (tmp_path / "docs/intro.rst").write_text(
+        "Intro\n=====\n\n\nText.\nMore.\nEnd.\n", encoding="utf-8"
+    )
     return tmp_path
 
 
