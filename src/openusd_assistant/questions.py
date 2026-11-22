@@ -20,6 +20,9 @@ class SourceSpan(BaseModel):
     path: str
     start_line: int = Field(ge=1)
     end_line: int = Field(ge=1)
+    # Another passage that also answers the question (the corpus repeats itself).
+    # Retrieval may hit it; it is exempt from the dev/held-out shared-passage rule.
+    alternative: bool = False
 
     @model_validator(mode="after")
     def ordered(self) -> "SourceSpan":
@@ -100,12 +103,21 @@ def validate_question_sets(
             },
             "uncertain": sum(q.uncertain is not None for q in questions),
         }
-    errors.extend(_shared_passages(sets))
-    return {"sets": summary, "errors": errors}
+    shared = _shared_passages(sets)
+    errors.extend(message for message, primary in shared if primary)
+    return {
+        "sets": summary,
+        "errors": errors,
+        # Overlaps involving an alternative source: corpus repetition, not twin questions.
+        "shared_alternative_passages": [message for message, primary in shared if not primary],
+    }
 
 
-def _shared_passages(sets: dict[str, list[Question]]) -> list[str]:
-    """Report source spans that overlap across sets: tuning on one would see the other."""
+def _shared_passages(sets: dict[str, list[Question]]) -> list[tuple[str, bool]]:
+    """Source spans that overlap across sets, flagged True when both spans are primary.
+
+    Two primary spans mean near-twin questions, so tuning on one set would see the other.
+    """
     spans = [
         (name, q.id, span)
         for name, questions in sets.items()
@@ -117,7 +129,8 @@ def _shared_passages(sets: dict[str, list[Question]]) -> list[str]:
         for other_name, other_id, other in spans[i + 1 :]:
             if other_name != name and other.path == span.path:
                 if span.start_line <= other.end_line and other.start_line <= span.end_line:
-                    errors.append(f"{name}: {qid} shares a passage with {other_name}: {other_id}")
+                    message = f"{name}: {qid} shares a passage with {other_name}: {other_id}"
+                    errors.append((message, not (span.alternative or other.alternative)))
     return errors
 
 

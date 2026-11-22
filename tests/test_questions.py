@@ -108,3 +108,16 @@ def test_overlapping_passages_across_sets_are_reported(source_dir):
         "shares a passage" in e
         for e in validate_question_sets(only_dev_spans, MANIFEST, source_dir)["errors"]
     )
+
+
+def test_alternative_sources_may_overlap_across_sets(source_dir):
+    alt = [
+        {"path": "docs/intro.rst", "start_line": 6, "end_line": 7},
+        {"path": "docs/intro.rst", "start_line": 1, "end_line": 2, "alternative": True},
+    ]
+    heldout = balanced("h") + [make("h-alt", sources=alt)]
+    result = validate_question_sets(
+        {"dev": balanced("d"), "heldout": heldout}, MANIFEST, source_dir
+    )
+    assert result["errors"] == []
+    assert any(m.endswith("heldout: h-alt") for m in result["shared_alternative_passages"])
