@@ -42,27 +42,34 @@ def user_message(question: str, context: list[Chunk]) -> str:
     return json.dumps(content, ensure_ascii=False)
 
 
+def gemini_client(settings):
+    """A google-genai client that retries rate limits and transient server errors."""
+    from google.genai import Client, types
+
+    if settings.gemini_api_key is None:
+        raise ValueError("Set OPENUSD_GEMINI_API_KEY in .env to use Gemini.")
+    return Client(
+        api_key=settings.gemini_api_key.get_secret_value(),
+        http_options=types.HttpOptions(
+            timeout=int(settings.model_timeout * 1000),
+            # Free-tier rate limits return 429; retry with backoff instead of failing.
+            retry_options=types.HttpRetryOptions(
+                attempts=6, initial_delay=2, max_delay=60, http_status_codes=[429, 500, 503]
+            ),
+        ),
+    )
+
+
 class GeminiChat:
     """Structured answers from the Gemini API through the official google-genai SDK."""
 
     def __init__(self, settings, client=None) -> None:
-        from google.genai import Client, types
+        from google.genai import types
 
         if not settings.gemini_model:
             raise ValueError("Set OPENUSD_GEMINI_MODEL to a model ID from AI Studio.")
         if client is None:
-            if settings.gemini_api_key is None:
-                raise ValueError("Set OPENUSD_GEMINI_API_KEY in .env to use Gemini.")
-            client = Client(
-                api_key=settings.gemini_api_key.get_secret_value(),
-                http_options=types.HttpOptions(
-                    timeout=int(settings.model_timeout * 1000),
-                    # Free-tier rate limits return 429; retry with backoff instead of failing.
-                    retry_options=types.HttpRetryOptions(
-                        attempts=6, initial_delay=2, max_delay=60, http_status_codes=[429, 500, 503]
-                    ),
-                ),
-            )
+            client = gemini_client(settings)
         self.client = client
         self.model = settings.gemini_model
         thinking = None

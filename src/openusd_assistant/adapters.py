@@ -52,6 +52,8 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr | None = None  # read from .env only; never logged
     gemini_thinking_budget: int | None = None
     gemini_thinking_level: str | None = None
+    # LLM judge for answer evaluation; must not be one of the compared models.
+    judge_model: str = ""
 
     @field_validator(
         "gemini_api_key", "gemini_thinking_budget", "gemini_thinking_level", mode="before"
