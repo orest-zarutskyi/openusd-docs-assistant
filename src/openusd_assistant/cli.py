@@ -11,6 +11,7 @@ from .adapters import OllamaModels, QdrantIndex, Settings, connect_qdrant
 from .api import create_app
 from .corpus import fetch_chunks, load_manifest
 from .models import DependencyTimeout, DependencyUnavailable
+from .questions import load_questions, validate_question_sets
 from .retrieval_eval import evaluate_bm25, evaluate_retrieval
 from .snapshot import build_manifest, corpus_report, github_file, github_tree
 
@@ -36,6 +37,11 @@ def main() -> int:
     rebuild.add_argument(
         "--snapshot-dir", type=Path, help="Also save the downloaded files for --source-dir."
     )
+    check = commands.add_parser("check-questions", help="Validate dev and held-out questions.")
+    check.add_argument("--manifest", type=Path, default=Path("corpus/manifest.json"))
+    check.add_argument("--source-dir", type=Path, default=Path("data/openusd-26.08"))
+    check.add_argument("--dev", type=Path, default=Path("eval/questions.jsonl"))
+    check.add_argument("--heldout", type=Path, default=Path("eval/heldout.jsonl"))
     serve = commands.add_parser("serve")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8000)
@@ -52,6 +58,13 @@ def main() -> int:
             load_manifest(args.manifest)
             print(f"OpenUSD {manifest['release']}: {len(manifest['documents'])} documents.")
             return 0
+        if args.command == "check-questions":
+            sets = {"dev": load_questions(args.dev)}
+            if args.heldout.exists():
+                sets["heldout"] = load_questions(args.heldout)
+            result = validate_question_sets(sets, load_manifest(args.manifest), args.source_dir)
+            print(json.dumps(result, indent=2))
+            return 1 if result["errors"] else 0
         settings = Settings()
         bm25 = args.command == "eval-retrieval" and args.backend == "bm25"
         if args.command in {"index", "check-corpus"} or bm25:
