@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     embedding_revision: str = ""
     top_k: int = Field(default=5, ge=1, le=10)
     min_score: float = Field(default=0.55, ge=0, le=1)
+    # Candidates taken from each of BM25 and dense before fusion, and how many of the
+    # fused list the cross-encoder rescores.
+    candidate_depth: int = Field(default=50, ge=10, le=200)
+    rerank_depth: int = Field(default=20, ge=5, le=100)
+    reranker_cache: str = "data/fastembed"
     model_timeout: float = Field(default=60, gt=0, le=300)
 
 
