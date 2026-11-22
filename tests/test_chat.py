@@ -138,3 +138,13 @@ def test_generation_schema_requires_answer_text_and_evidence(monkeypatch):
     OllamaModels(Settings(_env_file=None, ollama_reasoning=True))
     assert seen["schema"]["required"] == ["status", "answer", "evidence"]
     assert seen["init"]["num_ctx"] == 16384 and seen["init"]["reasoning"] is True
+
+
+def test_gemini_thinking_gets_room_for_reasoning():
+    from openusd_assistant.chat import MAX_OUTPUT_TOKENS, REASONING_MAX_TOKENS
+
+    plain, _ = gemini(json.dumps(ANSWER))
+    thinking, _ = gemini(json.dumps(ANSWER), gemini_thinking_level="high")
+    assert plain.config.max_output_tokens == MAX_OUTPUT_TOKENS
+    assert thinking.config.max_output_tokens == REASONING_MAX_TOKENS
+    assert thinking.config.thinking_config.thinking_level.lower() == "high"

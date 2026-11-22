@@ -49,7 +49,7 @@ class Judge:
         self.model = settings.judge_model
         self.prompt = prompt_path.read_text(encoding="utf-8")
         self.prompt_sha256 = hashlib.sha256(self.prompt.encode()).hexdigest()[:12]
-        self.client = client or gemini_client(settings)
+        self.client = client or gemini_client(settings, timeout=settings.judge_timeout)
         self.config = types.GenerateContentConfig(
             system_instruction=self.prompt,
             temperature=0,

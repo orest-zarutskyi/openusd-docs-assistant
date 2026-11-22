@@ -55,7 +55,7 @@ def user_message(question: str, context: list[Chunk]) -> str:
     return json.dumps(content, ensure_ascii=False)
 
 
-def gemini_client(settings):
+def gemini_client(settings, timeout: float | None = None):
     """A google-genai client that retries rate limits and transient server errors."""
     from google.genai import Client, types
 
@@ -64,10 +64,11 @@ def gemini_client(settings):
     return Client(
         api_key=settings.gemini_api_key.get_secret_value(),
         http_options=types.HttpOptions(
-            timeout=int(settings.model_timeout * 1000),
+            # The SDK sends this as the server-side deadline too (504 when exceeded).
+            timeout=int((timeout or settings.model_timeout) * 1000),
             # Free-tier rate limits return 429; retry with backoff instead of failing.
             retry_options=types.HttpRetryOptions(
-                attempts=6, initial_delay=2, max_delay=60, http_status_codes=[429, 500, 503]
+                attempts=6, initial_delay=2, max_delay=60, http_status_codes=[429, 500, 503, 504]
             ),
         ),
     )
@@ -94,7 +95,8 @@ class GeminiChat:
         self.config = types.GenerateContentConfig(
             system_instruction=SYSTEM_PROMPT,
             temperature=0,
-            max_output_tokens=MAX_OUTPUT_TOKENS,
+            # Gemini counts thinking tokens against this cap, as Ollama does with num_predict.
+            max_output_tokens=REASONING_MAX_TOKENS if thinking else MAX_OUTPUT_TOKENS,
             response_mime_type="application/json",
             response_json_schema=answer_schema(),
             thinking_config=thinking,
