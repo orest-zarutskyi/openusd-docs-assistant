@@ -61,8 +61,9 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr | None = None  # read from .env only; never logged
     gemini_thinking_budget: int | None = None
     gemini_thinking_level: str | None = None
-    # Qwen3-family "thinking"; chosen per model on dev (reports/answers_dev.md).
-    ollama_reasoning: bool = False
+    # Qwen3-family "thinking", chosen per model on dev (reports/variants_dev.md):
+    # qwen3:4b refused every dev question without it.
+    ollama_reasoning: bool = True
     ollama_num_ctx: int = Field(default=16384, ge=4096, le=131072)
     # LLM judge for answer evaluation; must not be one of the compared models.
     judge_model: str = ""
