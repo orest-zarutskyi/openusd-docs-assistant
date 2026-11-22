@@ -1,7 +1,8 @@
 from collections.abc import Callable
+from importlib.resources import files
 
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 
 from .graph import Generator, Retriever, build_graph
 from .models import AskRequest, AskResponse, AssistantError, DependencyUnavailable
@@ -14,6 +15,12 @@ def create_app(retrieve: Retriever, generate: Generator, ready: Callable[[], boo
     @app.exception_handler(AssistantError)
     async def assistant_error(_request: Request, exc: AssistantError) -> JSONResponse:
         return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
+
+    page = files("openusd_assistant").joinpath("static/index.html").read_text(encoding="utf-8")
+
+    @app.get("/", response_class=HTMLResponse, include_in_schema=False)
+    def index() -> str:
+        return page
 
     @app.get("/healthz")
     def health() -> dict[str, str]:

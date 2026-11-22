@@ -1,0 +1,137 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenUSD Docs Assistant</title>
+<style>
+  :root { color-scheme: light dark; --muted: #6b7280; --line: #d1d5db; --accent: #2563eb;
+          --ok: #15803d; --warn: #b45309; --bad: #b91c1c; --card: rgba(127,127,127,.06); }
+  * { box-sizing: border-box; }
+  body { font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif; margin: 0; }
+  main { max-width: 860px; margin: 0 auto; padding: 32px 20px 64px; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; }
+  textarea { width: 100%; min-height: 84px; padding: 10px 12px; font: inherit; border: 1px solid var(--line);
+             border-radius: 8px; background: transparent; color: inherit; resize: vertical; }
+  .row { display: flex; gap: 8px; align-items: center; margin-top: 10px; flex-wrap: wrap; }
+  button { font: inherit; border: 1px solid var(--line); border-radius: 8px; padding: 7px 14px;
+           background: transparent; color: inherit; cursor: pointer; }
+  button.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  button:disabled { opacity: .6; cursor: progress; }
+  .examples button { font-size: 13px; padding: 4px 10px; color: var(--muted); }
+  .card { margin-top: 24px; padding: 16px 18px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
+  .badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 999px; color: #fff; }
+  .answer { background: var(--ok); } .refusal { background: var(--warn); } .error { background: var(--bad); }
+  .meta { color: var(--muted); font-size: 13px; margin-left: 8px; }
+  .text { white-space: pre-wrap; margin: 12px 0 0; }
+  h2 { font-size: 15px; margin: 20px 0 8px; }
+  ol { padding-left: 20px; margin: 0; }
+  li { margin-bottom: 12px; }
+  blockquote { margin: 6px 0 0; padding: 4px 12px; border-left: 3px solid var(--line); color: var(--muted); white-space: pre-wrap; }
+  a { color: var(--accent); }
+  code { font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>OpenUSD Docs Assistant</h1>
+  <p class="sub">Answers only from the pinned OpenUSD v26.08 documentation, with the exact source lines.
+    If the documentation does not cover the question, it says so.</p>
+
+  <form id="form">
+    <textarea id="question" maxlength="2000" placeholder="Ask about stages, layers, references, payloads, variants…" required></textarea>
+    <div class="row">
+      <button class="primary" id="ask" type="submit">Ask</button>
+      <span class="meta">Ctrl+Enter to send</span>
+    </div>
+    <div class="row examples" id="examples"></div>
+  </form>
+
+  <section id="result" hidden></section>
+</main>
+<script>
+const EXAMPLES = [
+  "Which composition arc lets me open a stage before loading a heavy asset?",
+  "What is the difference between deactivating a prim and making it invisible?",
+  "How do I author a color change inside the red variant instead of writing a local opinion?",
+  "What Pyro settings should I use for my smoke shot?",
+];
+const form = document.getElementById("form");
+const input = document.getElementById("question");
+const button = document.getElementById("ask");
+const result = document.getElementById("result");
+
+for (const text of EXAMPLES) {
+  const b = document.createElement("button");
+  b.type = "button";
+  b.textContent = text;
+  b.onclick = () => { input.value = text; form.requestSubmit(); };
+  document.getElementById("examples").append(b);
+}
+input.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.ctrlKey) form.requestSubmit(); });
+
+function el(tag, attrs = {}, text = "") {
+  const node = document.createElement(tag);
+  Object.assign(node, attrs);
+  if (text) node.textContent = text;  // never innerHTML: answers and quotes are untrusted
+  return node;
+}
+
+form.addEventListener("submit", async (event) => {
+  event.preventDefault();
+  const question = input.value.trim();
+  if (!question) return;
+  button.disabled = true;
+  button.textContent = "Searching…";
+  const started = performance.now();
+  result.hidden = false;
+  result.replaceChildren(el("div", { className: "card" }, "Retrieving passages and drafting an answer…"));
+  let response, body;
+  try {
+    response = await fetch("ask", { method: "POST", headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({ question }) });
+    body = await response.json();
+  } catch (error) {
+    response = { ok: false, status: 0 };
+    body = { detail: "The service could not be reached." };
+  }
+  const seconds = ((performance.now() - started) / 1000).toFixed(1);
+  button.disabled = false;
+  button.textContent = "Ask";
+  render(response, body, seconds);
+});
+
+function render(response, body, seconds) {
+  const card = el("div", { className: "card" });
+  const head = el("div");
+  if (!response.ok) {
+    head.append(el("span", { className: "badge error" }, `Error ${response.status || ""}`.trim()),
+                el("span", { className: "meta" }, `${seconds} s`));
+    const detail = typeof body.detail === "string" ? body.detail : JSON.stringify(body.detail);
+    card.append(head, el("p", { className: "text" }, detail));
+    result.replaceChildren(card);
+    return;
+  }
+  const answered = body.status === "answer";
+  head.append(el("span", { className: `badge ${answered ? "answer" : "refusal"}` },
+                 answered ? "Answer" : "Not in the documentation"),
+              el("span", { className: "meta" }, `${seconds} s`));
+  card.append(head, el("p", { className: "text" }, body.answer));
+  if (body.sources && body.sources.length) {
+    card.append(el("h2", {}, "Sources"));
+    const list = el("ol");
+    for (const s of body.sources) {
+      const item = el("li");
+      const link = el("a", { href: s.url, target: "_blank", rel: "noopener noreferrer" },
+                      `${s.path} · lines ${s.start_line}–${s.end_line}`);
+      item.append(el("strong", {}, s.title), el("br"), link, el("blockquote", {}, s.quote));
+      list.append(item);
+    }
+    card.append(list);
+  }
+  result.replaceChildren(card);
+}
+</script>
+</body>
+</html>

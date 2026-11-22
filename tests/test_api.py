@@ -110,3 +110,13 @@ def test_readiness_validation_and_timeout_are_distinct():
 
     assert response.status_code == 504
     assert "sensitive provider error" not in response.text
+
+
+def test_index_page_is_served_and_renders_untrusted_text_safely():
+    with TestClient(create_app(lambda question: [], lambda *a: None, lambda: True)) as client:
+        response = client.get("/")
+    assert response.status_code == 200
+    assert response.headers["content-type"].startswith("text/html")
+    page = response.text
+    assert 'fetch("ask"' in page  # relative, so it works behind a path prefix too
+    assert "innerHTML" not in page.replace("never innerHTML", "")
