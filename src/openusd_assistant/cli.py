@@ -12,6 +12,7 @@ from .api import create_app
 from .corpus import fetch_chunks, load_manifest
 from .models import DependencyTimeout, DependencyUnavailable
 from .retrieval_eval import evaluate_bm25, evaluate_retrieval
+from .snapshot import build_manifest, corpus_report, github_file, github_tree
 
 
 def main() -> int:
@@ -23,15 +24,34 @@ def main() -> int:
         command.add_argument(
             "--source-dir", type=Path, help="Use a verified local source snapshot."
         )
+        if name == "check-corpus":
+            command.add_argument("--report", type=Path, help="Write chunk statistics as Markdown.")
         if name == "eval-retrieval":
             command.add_argument("--backend", choices=("bm25", "qdrant"), default="bm25")
             command.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))
+    rebuild = commands.add_parser(
+        "build-manifest", help="List every docs/**/*.rst at the pinned commit and hash it."
+    )
+    rebuild.add_argument("--manifest", type=Path, default=Path("corpus/manifest.json"))
+    rebuild.add_argument(
+        "--snapshot-dir", type=Path, help="Also save the downloaded files for --source-dir."
+    )
     serve = commands.add_parser("serve")
     serve.add_argument("--host", default="127.0.0.1")
     serve.add_argument("--port", type=int, default=8000)
     args = parser.parse_args()
 
     try:
+        if args.command == "build-manifest":
+            current = json.loads(args.manifest.read_text(encoding="utf-8"))
+            manifest = build_manifest(
+                current, github_tree, github_file, snapshot_dir=args.snapshot_dir
+            )
+            text = json.dumps(manifest, indent=2, ensure_ascii=False) + "\n"
+            args.manifest.write_text(text, encoding="utf-8", newline="\n")
+            load_manifest(args.manifest)
+            print(f"OpenUSD {manifest['release']}: {len(manifest['documents'])} documents.")
+            return 0
         settings = Settings()
         bm25 = args.command == "eval-retrieval" and args.backend == "bm25"
         if args.command in {"index", "check-corpus"} or bm25:
@@ -39,6 +59,10 @@ def main() -> int:
             chunks = fetch_chunks(manifest, source_dir=args.source_dir)
             if args.command == "check-corpus":
                 print(f"OpenUSD {manifest.release}: {len(chunks)} verified chunks.")
+                if args.report:
+                    args.report.parent.mkdir(parents=True, exist_ok=True)
+                    report = corpus_report(manifest, chunks)
+                    args.report.write_text(report, encoding="utf-8", newline="\n")
                 return 0
             if bm25:
                 print(json.dumps(evaluate_bm25(args.questions, chunks, settings.top_k), indent=2))

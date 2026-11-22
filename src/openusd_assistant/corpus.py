@@ -16,6 +16,7 @@ _NOTICES = {"LICENSE.txt", "NOTICE.txt"}
 _MAX_SOURCE_BYTES = 2 * 1024 * 1024
 _HEADING_RULE = re.compile(r"([=!~^`#*+_.:\-])\1{2,}")
 _LABEL = re.compile(r"\.\. _[^:]+:\s*")
+_FILE_FIELD = re.compile(r":[A-Za-z][\w-]*:\s*")
 # Directives whose bodies are site plumbing rather than documentation text.
 _SKIPPED_DIRECTIVE = re.compile(r"\.\. (?:raw|include|contents|toctree)::")
 _CODE_DIRECTIVE = re.compile(r"\.\. (?:code-block|code|sourcecode)::")
@@ -90,6 +91,12 @@ def fetch_chunks(manifest: Manifest, *, source_dir: Path | None = None) -> list[
     return chunks
 
 
+def document_title(text: str, fallback: str) -> str:
+    """Return the first RST heading, or the fallback for files without one."""
+    headings, _ = _headings(text.splitlines())
+    return headings[min(headings)] if headings else fallback
+
+
 def split_document(
     file: SourceFile, commit: str, text: str, *, chunk_chars: int = 2300
 ) -> list[Chunk]:
@@ -129,6 +136,7 @@ def _headings(lines: list[str]) -> tuple[dict[int, str], set[int]]:
         for i, line in enumerate(lines)
         if _LABEL.fullmatch(line)
         or _HEADING_RULE.fullmatch(line)  # transitions such as ----
+        or _FILE_FIELD.fullmatch(line)  # document metadata such as :orphan:
         or line.startswith((".. include::", ".. contents::"))
     }
     for i, (line, underline) in enumerate(zip(lines, lines[1:])):
@@ -166,6 +174,7 @@ def _paragraph_chunks(
             if not _LABEL.fullmatch(previous):
                 boundaries.append(i)
     boundaries.append(end)
+    boundaries = _split_oversized_blocks(lines, boundaries, 3 * chunk_chars)
 
     sections = []
     chunk_start, size = start, 0
@@ -190,6 +199,28 @@ def _paragraph_chunks(
         if left < right:
             trimmed.append((left, right))
     return trimmed
+
+
+def _split_oversized_blocks(lines: list[str], boundaries: list[int], limit: int) -> list[int]:
+    """Split very long indented blocks (whole schemas in one code block) between statements.
+
+    A cut is allowed only at a blank line followed by a line at the block's own base
+    indentation, so a nested definition is never cut in the middle.
+    """
+    result = [boundaries[0]]
+    for left, right in zip(boundaries, boundaries[1:]):
+        if sum(len(line) + 1 for line in lines[left:right]) > limit:
+            indents = [len(line) - len(line.lstrip()) for line in lines[left:right] if line.strip()]
+            base = min((indent for indent in indents if indent), default=0)
+            seen_statement = False  # never leave the directive line on its own
+            for j in range(left + 1, right):
+                line = lines[j]
+                at_base = bool(base and line.strip()) and len(line) - len(line.lstrip()) == base
+                if at_base and seen_statement and not lines[j - 1].strip():
+                    result.append(j)
+                seen_statement = seen_statement or at_base
+        result.append(right)
+    return result
 
 
 def _keeps_with_previous(lines: list[str], left: int) -> bool:

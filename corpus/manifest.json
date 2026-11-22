@@ -5,14 +5,184 @@
   "license": "Tomorrow Open Source Technology License 1.0",
   "documents": [
     {
+      "path": "docs/apiDocs.rst",
+      "title": "API Documentation",
+      "sha256": "90c9cbfd554066a8c721fdc2e935d3a59a2a3714ecb19c619242683203711699"
+    },
+    {
+      "path": "docs/contributing_supplemental.rst",
+      "title": "Supplemental Terms for OpenUSD Technical Proposals (\"Supplemental Terms\")",
+      "sha256": "85d56b738904d01565f54c9830732639e75fb3692844c70be911375dab31caa0"
+    },
+    {
+      "path": "docs/contributing_to_usd.rst",
+      "title": "Contributing to USD",
+      "sha256": "eed46baf2a7921531f35b2903608434a40d255b55b520c8d815e24f2367b5a16"
+    },
+    {
+      "path": "docs/contributors.rst",
+      "title": "USD Contributors (Historical)",
+      "sha256": "d1c211f8d42443d4701810d285c87e29616f5b127b8bc8e679b5aee63f22cd88"
+    },
+    {
+      "path": "docs/dl_city_set.rst",
+      "title": "City Set",
+      "sha256": "2dd4e947c348c156fbbbf7548aa4c4eab1bdc00fcc33ba338833f384e9d063cb"
+    },
+    {
+      "path": "docs/dl_downloads.rst",
+      "title": "Downloads and Videos",
+      "sha256": "59423ee14ea492317db110b832423cb6ec81246b78c6217a32d172a4b76027dd"
+    },
+    {
+      "path": "docs/dl_kitchen_set.rst",
+      "title": "Kitchen Set",
+      "sha256": "6689f14fe3a63fa97ec0a4c4b8ac2bd303419273fd7d7a0f2452bf0ad4428d6a"
+    },
+    {
+      "path": "docs/dl_license.rst",
+      "title": "dl_license",
+      "sha256": "bacf9e83ddd22f5ca2aa92091ce0bc31128a937757c581ec61653e907fbe9be4"
+    },
+    {
+      "path": "docs/dl_usdskel_examples.rst",
+      "title": "UsdSkel Examples",
+      "sha256": "bca4b4ab7a46b1bd320fd420b0250955ead64002f90a4da4f0a195cded8f34ed"
+    },
+    {
+      "path": "docs/glossary.rst",
+      "title": "USD Terms and Concepts",
+      "sha256": "b381f7dc71271255e33463fc7c21e1112eff6595850a88b3051bbcbb301f6692"
+    },
+    {
+      "path": "docs/index.rst",
+      "title": "index",
+      "sha256": "701c2b2973754d2a1131a5972f33fc5e1c070ef8e3ac2e6eb167b8ef059f709d"
+    },
+    {
+      "path": "docs/index_body.rst",
+      "title": "USD Home",
+      "sha256": "966f1f13902378073e05a093085b5d4c706d3ee56beff15d17b404abf6cc45ec"
+    },
+    {
       "path": "docs/intro.rst",
       "title": "Introduction to USD",
       "sha256": "2c21f700fc164708ac6628553824b084f2d849c6b7ab1c3c9b18a12ef8090171"
     },
     {
+      "path": "docs/intro_to_openexec.rst",
+      "title": "Introduction to OpenExec",
+      "sha256": "a9d92d47b2763cf345899c6970392a0e24a4c1d12262fd134ba07f5ec1e04ca6"
+    },
+    {
+      "path": "docs/maxperf.rst",
+      "title": "Maximizing USD Performance",
+      "sha256": "f6bcf70c117caa29a5e2d4ff2eec1f65e60e158fbcef6625fb9ea835ab8b967d"
+    },
+    {
+      "path": "docs/plugins.rst",
+      "title": "USD Third-Party Plugins",
+      "sha256": "df4030f27b3aa97536a1172fcfbf0d3efa884e898e6b4e12f094a8ed09aa37e3"
+    },
+    {
+      "path": "docs/plugins_alembic.rst",
+      "title": "Alembic USD Plugin",
+      "sha256": "f87de049e14fad203d04f4ba88e5be64d2908ded7e152e97572166a147772b2c"
+    },
+    {
+      "path": "docs/plugins_renderman.rst",
+      "title": "RenderMan USD Imaging Plugin",
+      "sha256": "e9457798c429f1552a99ab138fab4fe4444b1a3845c9716d27b34596ee74931d"
+    },
+    {
+      "path": "docs/press_opensource_announce.rst",
+      "title": "Open Source Announcement",
+      "sha256": "f637a2d819687498a39e97cbd09f07d4984bdb116f702d735ffe19b172b58772"
+    },
+    {
+      "path": "docs/press_opensource_release.rst",
+      "title": "Open Source Release",
+      "sha256": "a90dd18099d4d63cd8bfce17b0360792839766cf13ef3f7d52887c753d5734cc"
+    },
+    {
+      "path": "docs/ref_performance_metrics.rst",
+      "title": "Performance Metrics",
+      "sha256": "7a732cebeffb24f66c70562b6850b92a04240e9181d9baf2c4dbaefcb7cfbffc"
+    },
+    {
+      "path": "docs/release_schedule.rst",
+      "title": "Release Schedule",
+      "sha256": "b7b7398ce020fdc434bb98af282f591353cedd3019b24bff09ec330890423600"
+    },
+    {
+      "path": "docs/rolesAndUtils.rst",
+      "title": "rolesAndUtils",
+      "sha256": "89a9ff37c53187c58aa5f38bc6f4b4a8df536f57a37841420e3ae4c1b3bb0ba9"
+    },
+    {
+      "path": "docs/spec.rst",
+      "title": "Specifications",
+      "sha256": "f40a86d7b3c90d24e2bdbe906a16751f7e420062a1a184452896b6a855c0bc31"
+    },
+    {
+      "path": "docs/spec_usdpreviewsurface.rst",
+      "title": "UsdPreviewSurface Specification",
+      "sha256": "3e8722c67e8c93aef9c850eb8c9d647248994472193e0041c03add87a4adaa55"
+    },
+    {
+      "path": "docs/spec_usdz.rst",
+      "title": "Usdz File Format Specification",
+      "sha256": "ac6b629a94a9a94d8323b005cf759125d749aeefd7f9976b2a55b5f00ba39bb2"
+    },
+    {
+      "path": "docs/toc.rst",
+      "title": "toc",
+      "sha256": "23c95683610e2a57cbcd0ec03a01f55bce59ff8b88a7be5eab32c4e861e5d433"
+    },
+    {
+      "path": "docs/toolset.rst",
+      "title": "USD Toolset",
+      "sha256": "ad2b8739617bcf1286a48c3143a1781df2c2a20ee544d054549fdfb79f6757eb"
+    },
+    {
+      "path": "docs/tut_authoring_variants.rst",
+      "title": "Authoring Variants",
+      "sha256": "7d91c28e6302e7764d342aa40ae0e8a0ace852dc78bac6d03447ddc83b942b32"
+    },
+    {
+      "path": "docs/tut_converting_between_layer_formats.rst",
+      "title": "Converting Between Layer Formats",
+      "sha256": "49db7d4508b60fa6c74aa9107e0256cfad4f672bb53ba19004e44ef24fe91258"
+    },
+    {
+      "path": "docs/tut_end_to_end.rst",
+      "title": "End to End Example",
+      "sha256": "100164e8023befc17818ca4e96ddead59d8acda0bfd09a3e3f23511a8913cf95"
+    },
+    {
+      "path": "docs/tut_generating_new_schema.rst",
+      "title": "Generating New Schema Classes",
+      "sha256": "8396ce54441bfc471a5eab2f66806817f8052faf055567aa263892bafa1f3a05"
+    },
+    {
       "path": "docs/tut_helloworld.rst",
       "title": "Hello World - Creating Your First USD Stage",
       "sha256": "8c7a4dd7a4a1ad0016e53bf9e6b93cf686634dba4ffc6eb3507472e6419a8578"
+    },
+    {
+      "path": "docs/tut_helloworld_redux.rst",
+      "title": "Hello World Redux - Using Generic Prims",
+      "sha256": "34ef2c746001f31af67b7ea034e1eb5a78ef63c5b0f1b4cd2db960ded2f2d1e8"
+    },
+    {
+      "path": "docs/tut_historical_badge.rst",
+      "title": "tut_historical_badge",
+      "sha256": "07ccafc5cbc180309c52ade121e3f45dd1f6e992811f7b4ebf9c879f16a35102"
+    },
+    {
+      "path": "docs/tut_houdini_example.rst",
+      "title": "Houdini USD Example Workflow",
+      "sha256": "0dc30b2f15b60e2b0a7b73e2179a4d5207870c3c2561988abdb2204e25003728"
     },
     {
       "path": "docs/tut_inspect_and_author_props.rst",
@@ -25,9 +195,194 @@
       "sha256": "3321457d9c3850774dbead1291a73db963874c685de3377bf9a63aaad09081af"
     },
     {
-      "path": "docs/tut_authoring_variants.rst",
-      "title": "Authoring Variants",
-      "sha256": "7d91c28e6302e7764d342aa40ae0e8a0ace852dc78bac6d03447ddc83b942b32"
+      "path": "docs/tut_setup_version_badge.rst",
+      "title": "tut_setup_version_badge",
+      "sha256": "758e4d951aabb9a26dd9effa1946f0a1701ea58ee69544bb9cef86ae78a54858"
+    },
+    {
+      "path": "docs/tut_simple_shading.rst",
+      "title": "Simple Shading in USD",
+      "sha256": "09df7fb4d147621ab891f1be71f0c8e2aecdea51a3d10a3d6773cf33fab126e1"
+    },
+    {
+      "path": "docs/tut_traversing_stage.rst",
+      "title": "Traversing a Stage",
+      "sha256": "99093a69fdaae7f34fb1d0b1590c6f8bf9c4a2835d8245916877d5d387ab2f5e"
+    },
+    {
+      "path": "docs/tut_usd_tutorials.rst",
+      "title": "USD Tutorials",
+      "sha256": "cab3608a27f7d6187b32dd34a31b9cc061880d851e079e32729a9fb9a0ab9c25"
+    },
+    {
+      "path": "docs/tut_usdview_plugin.rst",
+      "title": "Creating a Usdview Plugin",
+      "sha256": "ea0a1c1ab069d7a6bfb6c88a877461d0b7da39693858295ac869a4fc788fade2"
+    },
+    {
+      "path": "docs/tut_variants_example_in_katana.rst",
+      "title": "Variants Example in Katana",
+      "sha256": "0e7aff04523179fed8b0bd897c0ed3ceca1447deeadcde796684685bcc72f532"
+    },
+    {
+      "path": "docs/tut_xforms.rst",
+      "title": "Transformations, Animation, and Layer Offsets",
+      "sha256": "14b411ffce9a0f7896feb5276d1faa51e5c0cf14e0e9819cd37fa2390ca5d447"
+    },
+    {
+      "path": "docs/usd_products.rst",
+      "title": "Products Using USD",
+      "sha256": "347114041d1415e1701c87c099fce6cdf4e05598780400f9153824c784577f46"
+    },
+    {
+      "path": "docs/usdfaq.rst",
+      "title": "USD Frequently Asked Questions",
+      "sha256": "d082b25e9988d5f8f67be21b37b61aec697c12075c0b95a6bcc56d2aba4c6a65"
+    },
+    {
+      "path": "docs/user_guides/collections_and_patterns.rst",
+      "title": "Collections and Patterns",
+      "sha256": "c347e29c07996f920949247764ed773be6d5cbdacb2404884a9a1ab74a012c4c"
+    },
+    {
+      "path": "docs/user_guides/color_user_guide.rst",
+      "title": "Color User's Guide",
+      "sha256": "10e3e4df657f515b96ac165eaed001221ff174e4795cebdbffbd19c7c4114252"
+    },
+    {
+      "path": "docs/user_guides/namespace_editing.rst",
+      "title": "Namespace Editing",
+      "sha256": "2c8d8cb75acd347024544b317569c63dd7468c9865874de2d05f47db4737caa3"
+    },
+    {
+      "path": "docs/user_guides/primvars.rst",
+      "title": "Primvars",
+      "sha256": "f22bd041f1ce0ea36811909b1c2baba931d98b5b92837cf5ee1558defda68a58"
+    },
+    {
+      "path": "docs/user_guides/render_user_guide.rst",
+      "title": "Rendering with USD",
+      "sha256": "2359e601136ca3552af391bbfabd501ef3741213ff4a0401a44d988bfc874733"
+    },
+    {
+      "path": "docs/user_guides/schemas/UsdProfiles/UsdProfiles_toc.rst",
+      "title": "Profiles (UsdProfiles)",
+      "sha256": "3121c2f63aab45f59192ee5dc806b02eca35be4e5ef1636d91f51ba969e5ba95"
+    },
+    {
+      "path": "docs/user_guides/schemas/index.rst",
+      "title": "Schema Domains",
+      "sha256": "79dbcf80fe6532c360a87594775fcdcbad3e026bd414aba76b1700edc678040e"
+    },
+    {
+      "path": "docs/user_guides/schemas/usdLux/usdLux_toc.rst",
+      "title": "Lights (usdLux)",
+      "sha256": "c59fcbbe4dcb99359a9a54cd71cd96cf8d4f7a64912d43d25322bcc3aa574366"
+    },
+    {
+      "path": "docs/user_guides/schemas/usdMedia/usdMedia_toc.rst",
+      "title": "Media (usdMedia)",
+      "sha256": "bf5785a3c5ae9dc8e33b80c976afdee6b5cad6b427518111f2a43d20cd105e9d"
+    },
+    {
+      "path": "docs/user_guides/schemas/usdRender/usdRender_toc.rst",
+      "title": "Render (usdRender)",
+      "sha256": "6d27a330ea280a1f1129fef60ef68d739aae90ae3a69f40676658130ef912bf2"
+    },
+    {
+      "path": "docs/user_guides/schemas/usdUI/usdUI_toc.rst",
+      "title": "UI (usdUI)",
+      "sha256": "42cdc3952051fd5bc184e55702bda474ecc02a9548fda91ed87440b40fa134c3"
+    },
+    {
+      "path": "docs/user_guides/schemas/usdVol/usdVol_toc.rst",
+      "title": "Volumes (usdVol)",
+      "sha256": "bc93bcfa5ca25185a08669df8b7870183aa3eb6171162550268c3ad8412573c2"
+    },
+    {
+      "path": "docs/user_guides/time_and_animated_values.rst",
+      "title": "Time and Animated Values",
+      "sha256": "04dd2c1cd18342a640fe2c60aafc418d939b465e3099feefc1d4b88608481e74"
+    },
+    {
+      "path": "docs/user_guides/variable_expressions.rst",
+      "title": "USD Variable Expressions",
+      "sha256": "753b501569a58e7c2be0b8ee84f1771e5c3896efac200a200b57ce90c13eaded"
+    },
+    {
+      "path": "docs/wp.rst",
+      "title": "Proposals",
+      "sha256": "af5f5f02dc4177daf7973ab49ff2768861823e378d2b4f1d6e3935a4d28d00d6"
+    },
+    {
+      "path": "docs/wp_ar2.rst",
+      "title": "Asset Resolution (Ar) 2.0",
+      "sha256": "e2086beff194bb583f48b5f5caf99640c91979739f08eec1e4716cd7e3dc0e42"
+    },
+    {
+      "path": "docs/wp_asset_previews.rst",
+      "title": "Asset Previews in USD",
+      "sha256": "df6502e1802e055a79e727d30b35365e4f113efff4d66e2a462462c1eed42f6c"
+    },
+    {
+      "path": "docs/wp_connectable_nodes.rst",
+      "title": "Generalizing Connectable Nodes Beyond UsdShade",
+      "sha256": "2e2c92c8aaefba2fd3eafb0a7d2039aaa84ae33663a6d61f673c1f8e59c3ec49"
+    },
+    {
+      "path": "docs/wp_coordsys.rst",
+      "title": "Coordinate Systems in USD Proposal",
+      "sha256": "a2d629590b7fc10691e444eb5d99d204ea45051c8cae553d7deb37e5fb034114"
+    },
+    {
+      "path": "docs/wp_render_settings.rst",
+      "title": "Render Settings in USD Proposal",
+      "sha256": "a46be29af7f8cce508739910d78699c267aaf83d9245d11f5b8a2a940e3da959"
+    },
+    {
+      "path": "docs/wp_rigid_body_physics.rst",
+      "title": "Rigid Body Physics in USD Proposal",
+      "sha256": "e6ee8826ef37141b2b4210e61f05a4a05ab952201f2cd4a5c259993e8fae31fe"
+    },
+    {
+      "path": "docs/wp_schema_versioning.rst",
+      "title": "Schema Versioning in USD",
+      "sha256": "7d660bba9081d6e2df04185424af5b5d83e4d1dd8ef026565f8f56b4ba2649cf"
+    },
+    {
+      "path": "docs/wp_stage_variables.rst",
+      "title": "Stage Variable Expressions",
+      "sha256": "ff2685ccba942e836c247de60bddda540d2a06803aba8a0c87afccc215dc8bc1"
+    },
+    {
+      "path": "docs/wp_usdaudio.rst",
+      "title": "UsdAudio Proposal",
+      "sha256": "1ade0e7e00454db49d8bcd409e20b507a222edea213c4571182e19510deedd9d"
+    },
+    {
+      "path": "docs/wp_usdlux_for_geometry_lights.rst",
+      "title": "Adapting UsdLux to Accommodate Geometry Lights",
+      "sha256": "566095b9228943845419fa0d5d50804ab8240d55958ef83930dd092a2cecaaa7"
+    },
+    {
+      "path": "docs/wp_usdlux_for_renderers.rst",
+      "title": "Adapting UsdLux to the Needs of Renderers",
+      "sha256": "31ebfeea6f4c58bab02c7c972872ddf8e8722aa3be961a03a34911c85707b01d"
+    },
+    {
+      "path": "docs/wp_usdpreviewsurface.rst",
+      "title": "UsdPreviewSurface Proposal",
+      "sha256": "68df57613ae4b34c54e4663ec2468cb5d2c4e03b2aec69454de1b0d60d9d53be"
+    },
+    {
+      "path": "docs/wp_usdshade.rst",
+      "title": "UsdShade Material Assignment",
+      "sha256": "8218b247928df33af4fe6ecc357cf20af2adf80f9e45f6e3ae73e6f9a6506216"
+    },
+    {
+      "path": "docs/wp_usdz.rst",
+      "title": "Usdz File Format Specification",
+      "sha256": "114a45ba0517e5f385da2ecada4bda5da2c4cf61422a6f18f465eeea673cc6a8"
     }
   ],
   "notices": [

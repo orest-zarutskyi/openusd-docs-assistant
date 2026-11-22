@@ -113,7 +113,39 @@ def test_label_before_a_paragraph_stays_with_that_paragraph():
     assert [(c.start_line, c.end_line) for c in layer] == [(16, 21), (23, 25)]
 
 
-def test_code_blocks_are_never_split_even_when_oversized():
+def test_very_long_code_blocks_split_only_between_top_level_statements():
+    schema = []
+    for name in ("A", "B", "C", "D"):
+        schema += [
+            f'   class "{name}" (',
+            "       doc = '''A schema with a nested block.",
+            "",
+            "       The blank line above is inside the class.'''",
+            "   )",
+            "   {",
+            "       float value = 1.0",
+            "   }",
+            "",
+        ]
+    lines = ["Schemas", "=======", "", ".. code-block:: usda", "", *schema[:-1]]
+    chunks = _split(lines, chunk_chars=120)
+    _assert_exact_lines(chunks, lines)
+    # Each piece starts at a class statement or the heading, never inside a class.
+    assert [chunk.text.splitlines()[0] for chunk in chunks] == [
+        "Schemas",
+        '   class "B" (',
+        '   class "C" (',
+        '   class "D" (',
+    ]
+    assert all(chunk.text.count("(") == chunk.text.count(")") for chunk in chunks)
+
+
+def test_orphan_metadata_alone_is_not_a_chunk():
+    chunks = _split([":orphan:", "", "Kitchen Set", "===========", "", "Download it."])
+    assert [chunk.text.splitlines()[0] for chunk in chunks] == ["Kitchen Set"]
+
+
+def test_code_blocks_without_statement_boundaries_are_not_split():
     lines = [
         "Example",
         "=======",
