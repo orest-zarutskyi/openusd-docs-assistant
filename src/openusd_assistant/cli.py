@@ -126,6 +126,7 @@ def main() -> int:
     judged.add_argument("--pricing", type=Path, default=Path("eval/pricing.json"))
     judged.add_argument("--tier", choices=("free", "paid"), required=True)
     judged.add_argument("--report", type=Path, default=Path("reports/answers_dev.md"))
+    judged.add_argument("--models", default="", help="Only these model specs (comma-separated).")
     judged.add_argument("--final", action="store_true", help="Allow a held-out run.")
     labels = commands.add_parser("label-answers", help="Sample answers for human labelling.")
     labels.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))

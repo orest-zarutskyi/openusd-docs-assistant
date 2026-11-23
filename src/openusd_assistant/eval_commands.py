@@ -98,6 +98,11 @@ def judge_answers(args, settings) -> None:
     files = sorted(args.answers_dir.glob("*.jsonl"))
     files = [f for f in files if f.name != "verdicts.jsonl"]
     runs = {load_records(f)[0].model: load_records(f) for f in files}
+    wanted = set(args.models.split(",")) if getattr(args, "models", "") else None
+    if wanted:
+        if missing := wanted - set(runs):
+            raise ValueError(f"No answers found for {sorted(missing)}")
+        runs = {spec: records for spec, records in runs.items() if spec in wanted}
     compared = [parse_model(spec)[1] for spec in runs]
     judge = Judge(settings, compared_models=compared)
     cache_path = args.answers_dir / "verdicts.jsonl"
@@ -106,23 +111,34 @@ def judge_answers(args, settings) -> None:
     judge_price = prices.get(judge.model, Price())
     judge_cost = 0.0
 
-    for spec, records in runs.items():
-        for record in records:
-            key = (spec, record.id)
-            if record.outcome != "answer" or (
-                key in cache and cache[key]["prompt_sha256"] == judge.prompt_sha256
-            ):
-                continue
-            verdict, usage = judge.grade(record, questions[record.id])
-            judge_cost += judge_price.cost(usage.__dict__)
-            cache[key] = {
-                "model": spec,
-                "id": record.id,
-                "judge": judge.model,
-                "prompt_sha256": judge.prompt_sha256,
-                "verdict": verdict.model_dump() if verdict else None,
-            }
-            print(f"judged {spec} {record.id}", flush=True)
+    def cached(key) -> bool:
+        row = cache.get(key)
+        return bool(row) and (row["judge"], row["prompt_sha256"]) == (
+            judge.model,
+            judge.prompt_sha256,
+        )
+
+    # Append each verdict as it arrives so a quota error or crash mid-run keeps the
+    # finished ones; a rerun skips them. Later rows win when the cache is reloaded.
+    cache_path.parent.mkdir(parents=True, exist_ok=True)
+    with cache_path.open("a", encoding="utf-8", newline="\n") as log:
+        for spec, records in runs.items():
+            for record in records:
+                key = (spec, record.id)
+                if record.outcome != "answer" or cached(key):
+                    continue
+                verdict, usage = judge.grade(record, questions[record.id])
+                judge_cost += judge_price.cost(usage.__dict__)
+                cache[key] = {
+                    "model": spec,
+                    "id": record.id,
+                    "judge": judge.model,
+                    "prompt_sha256": judge.prompt_sha256,
+                    "verdict": verdict.model_dump() if verdict else None,
+                }
+                log.write(json.dumps(cache[key], ensure_ascii=False) + "\n")
+                log.flush()
+                print(f"judged {spec} {record.id}", flush=True)
     cache_path.write_text(
         "".join(json.dumps(row, ensure_ascii=False) + "\n" for row in cache.values()),
         encoding="utf-8",

@@ -104,3 +104,62 @@ def test_compare_variants_writes_a_report(tmp_path):
     compare_variants(args)
     text = report.read_text(encoding="utf-8")
     assert "| `ollama:m@think` | 100% | 100% | 0% |" in text and text.count("| yes |") == 1
+
+
+def test_judge_answers_keeps_verdicts_when_a_run_fails_midway(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+
+    from openusd_assistant import eval_commands
+    from openusd_assistant.answer_eval import AnswerRecord, save_records
+    from openusd_assistant.chat import Usage
+    from openusd_assistant.judge import Judge
+    from openusd_assistant.models import DependencyUnavailable
+
+    questions = tmp_path / "questions.jsonl"
+    questions.write_text(
+        "".join(
+            f'{{"id":"{i}","question":"What is a payload in USD?","kind":"lookup","answerable":true,'
+            f'"sources":[{{"path":"docs/x.rst","start_line":1,"end_line":1}}],"expected_facts":["F."]}}\n'
+            for i in ("a", "b")
+        ),
+        encoding="utf-8",
+    )
+    answers = tmp_path / "answers"
+    for spec in ("ollama:m@think", "ollama:m@nothink"):
+        save_records(
+            answers / f"{spec.replace(':', '_').replace('@', '_')}.jsonl",
+            [AnswerRecord(i, "lookup", True, spec, "answer", answer="A.") for i in ("a", "b")],
+        )
+    verdict = '{"facts":[{"fact":"F.","covered":true}],"claims":[]}'
+    calls = []
+
+    class FlakyBackend:
+        def __init__(self, fail_after):
+            self.fail_after = fail_after
+
+        def complete(self, contents):
+            calls.append(contents)
+            if len(calls) > self.fail_after:
+                raise DependencyUnavailable("quota")
+            return verdict, Usage()
+
+    settings = SimpleNamespace(judge_model="judge-x", judge_provider="gemini")
+    args = SimpleNamespace(
+        questions=questions,
+        answers_dir=answers,
+        pricing=Path("eval/pricing.json"),
+        report=tmp_path / "answers.md",
+        tier="free",
+        models="ollama:m@think",
+    )
+    backend = FlakyBackend(fail_after=1)
+    monkeypatch.setattr(eval_commands, "Judge", lambda s, **kw: Judge(s, backend=backend, **kw))
+    with pytest.raises(DependencyUnavailable):
+        eval_commands.judge_answers(args, settings)
+    assert len((answers / "verdicts.jsonl").read_text(encoding="utf-8").splitlines()) == 1
+
+    backend.fail_after = 10  # the quota is back: only the missing verdict is requested
+    eval_commands.judge_answers(args, settings)
+    rows = (answers / "verdicts.jsonl").read_text(encoding="utf-8").splitlines()
+    assert len(calls) == 3 and len(rows) == 2  # the other variant was never judged
+    assert "ollama:m@nothink" not in args.report.read_text(encoding="utf-8")
