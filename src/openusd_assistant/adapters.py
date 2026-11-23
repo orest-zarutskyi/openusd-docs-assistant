@@ -67,11 +67,19 @@ class Settings(BaseSettings):
     ollama_num_ctx: int = Field(default=16384, ge=4096, le=131072)
     # LLM judge for answer evaluation; must not be one of the compared models.
     judge_model: str = ""
+    # gemini (the Gemini API key above) or openai-compatible (a /chat/completions gateway).
+    judge_provider: Literal["gemini", "openai-compatible"] = "gemini"
+    judge_base_url: str = ""
+    judge_api_key: SecretStr | None = None  # read from .env only; never logged
     # The judge reasons over long contexts; 60 s ended in 504 DEADLINE_EXCEEDED on dev.
     judge_timeout: float = Field(default=180, gt=0, le=600)
 
     @field_validator(
-        "gemini_api_key", "gemini_thinking_budget", "gemini_thinking_level", mode="before"
+        "gemini_api_key",
+        "gemini_thinking_budget",
+        "gemini_thinking_level",
+        "judge_api_key",
+        mode="before",
     )
     @classmethod
     def blank_is_unset(cls, value):

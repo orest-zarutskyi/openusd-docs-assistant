@@ -3,10 +3,12 @@
 import hashlib
 import json
 import random
+import time
 from collections.abc import Sequence
 from pathlib import Path
 from typing import Literal
 
+import httpx
 from pydantic import BaseModel, ValidationError
 
 from .answer_eval import ANSWER, AnswerRecord, rate
@@ -36,41 +38,26 @@ class Verdict(BaseModel):
         return all(c.verdict == "supported" for c in self.claims)
 
 
-class Judge:
-    def __init__(
-        self, settings, *, compared_models: Sequence[str], client=None, prompt_path=PROMPT_PATH
-    ):
+class GeminiBackend:
+    """The judge on the Gemini API (google-genai)."""
+
+    def __init__(self, client, model: str, system: str):
         from google.genai import types
 
-        if not settings.judge_model:
-            raise ValueError("Set OPENUSD_JUDGE_MODEL to the judge's model ID.")
-        if settings.judge_model in compared_models:
-            raise ValueError("The judge must not be one of the compared models.")
-        self.model = settings.judge_model
-        self.prompt = prompt_path.read_text(encoding="utf-8")
-        self.prompt_sha256 = hashlib.sha256(self.prompt.encode()).hexdigest()[:12]
-        self.client = client or gemini_client(settings, timeout=settings.judge_timeout)
+        self.client, self.model = client, model
         self.config = types.GenerateContentConfig(
-            system_instruction=self.prompt,
+            system_instruction=system,
             temperature=0,
             response_mime_type="application/json",
             response_json_schema=Verdict.model_json_schema(),
         )
 
-    def grade(self, record: AnswerRecord, question: Question) -> tuple[Verdict | None, Usage]:
+    def complete(self, contents: str) -> tuple[str, Usage]:
         from google.genai import errors
 
-        payload = {
-            "question": question.question,
-            "answer": record.answer,
-            "excerpts": [{"chunk_id": c["chunk_id"], "text": c["text"]} for c in record.context],
-            "expected_facts": question.expected_facts,
-        }
         try:
             response = self.client.models.generate_content(
-                model=self.model,
-                contents=json.dumps(payload, ensure_ascii=False),
-                config=self.config,
+                model=self.model, contents=contents, config=self.config
             )
         except (errors.APIError, ConnectionError) as exc:
             raise DependencyUnavailable("The judge model is unavailable.") from exc
@@ -82,8 +69,126 @@ class Judge:
             (meta.candidates_token_count or 0) if meta else 0,
             (meta.thoughts_token_count or 0) if meta else 0,
         )
+        return response.text or "", usage
+
+
+class OpenAICompatibleBackend:
+    """The judge on any OpenAI-compatible /chat/completions endpoint (e.g. a gateway).
+
+    The schema goes into the system message and the response is requested as a JSON
+    object, since gateways differ in support for strict json_schema output.
+    """
+
+    RETRY_STATUS = {429, 500, 502, 503, 504}
+
+    def __init__(
+        self,
+        base_url: str,
+        api_key: str,
+        model: str,
+        system: str,
+        *,
+        timeout: float = 180,
+        attempts: int = 4,
+        transport: httpx.BaseTransport | None = None,
+        sleep=time.sleep,
+    ):
+        schema = json.dumps(Verdict.model_json_schema(), ensure_ascii=False)
+        self.system = f"{system}\n\nResponse JSON schema:\n{schema}"
+        self.model, self.attempts, self.sleep = model, attempts, sleep
+        self.http = httpx.Client(
+            base_url=base_url.rstrip("/"),
+            headers={"Authorization": f"Bearer {api_key}"},
+            timeout=timeout,
+            transport=transport,
+        )
+
+    def complete(self, contents: str) -> tuple[str, Usage]:
+        body = {
+            "model": self.model,
+            "temperature": 0,
+            "response_format": {"type": "json_object"},
+            "messages": [
+                {"role": "system", "content": self.system},
+                {"role": "user", "content": contents},
+            ],
+        }
+        for attempt in range(self.attempts):
+            try:
+                response = self.http.post("/chat/completions", json=body)
+            except httpx.TimeoutException as exc:
+                raise DependencyTimeout("The judge model timed out.") from exc
+            except httpx.HTTPError as exc:
+                raise DependencyUnavailable("The judge model is unavailable.") from exc
+            if response.status_code in self.RETRY_STATUS and attempt + 1 < self.attempts:
+                self.sleep(min(60, 2 * 2**attempt))
+                continue
+            if response.status_code >= 400:
+                raise DependencyUnavailable(f"The judge endpoint returned {response.status_code}.")
+            data = response.json()
+            usage = data.get("usage") or {}
+            reasoning = (usage.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0
+            text = data["choices"][0]["message"].get("content") or ""
+            return _strip_fence(text), Usage(
+                usage.get("prompt_tokens", 0),
+                usage.get("completion_tokens", 0) - reasoning,
+                reasoning,
+            )
+        raise DependencyUnavailable("The judge endpoint kept failing.")
+
+
+def _strip_fence(text: str) -> str:
+    """Some gateways wrap JSON in a Markdown code fence despite json_object mode."""
+    text = text.strip()
+    if text.startswith("```"):
+        text = text.split("\n", 1)[1] if "\n" in text else ""
+        text = text.rsplit("```", 1)[0]
+    return text.strip()
+
+
+class Judge:
+    def __init__(
+        self,
+        settings,
+        *,
+        compared_models: Sequence[str],
+        client=None,
+        prompt_path=PROMPT_PATH,
+        backend=None,
+    ):
+        if not settings.judge_model:
+            raise ValueError("Set OPENUSD_JUDGE_MODEL to the judge's model ID.")
+        if settings.judge_model in compared_models:
+            raise ValueError("The judge must not be one of the compared models.")
+        self.model = settings.judge_model
+        self.prompt = prompt_path.read_text(encoding="utf-8")
+        self.prompt_sha256 = hashlib.sha256(self.prompt.encode()).hexdigest()[:12]
+        self.provider = getattr(settings, "judge_provider", "gemini")
+        if backend is None and self.provider == "openai-compatible":
+            if not settings.judge_base_url or settings.judge_api_key is None:
+                raise ValueError("Set OPENUSD_JUDGE_BASE_URL and OPENUSD_JUDGE_API_KEY in .env.")
+            backend = OpenAICompatibleBackend(
+                settings.judge_base_url,
+                settings.judge_api_key.get_secret_value(),
+                self.model,
+                self.prompt,
+                timeout=settings.judge_timeout,
+            )
+        if backend is None:
+            client = client or gemini_client(settings, timeout=settings.judge_timeout)
+            backend = GeminiBackend(client, self.model, self.prompt)
+        self.backend = backend
+
+    def grade(self, record: AnswerRecord, question: Question) -> tuple[Verdict | None, Usage]:
+        payload = {
+            "question": question.question,
+            "answer": record.answer,
+            "excerpts": [{"chunk_id": c["chunk_id"], "text": c["text"]} for c in record.context],
+            "expected_facts": question.expected_facts,
+        }
+        text, usage = self.backend.complete(json.dumps(payload, ensure_ascii=False))
         try:
-            verdict = Verdict.model_validate_json(response.text or "")
+            verdict = Verdict.model_validate_json(text)
         except ValidationError:
             return None, usage
         if len(verdict.facts) != len(question.expected_facts):

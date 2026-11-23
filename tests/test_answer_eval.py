@@ -268,3 +268,79 @@ def with_changes(record, **changes):
     from openusd_assistant.answer_eval import AnswerRecord
 
     return AnswerRecord(**{**asdict(record), **changes})
+
+
+def test_openai_compatible_judge_backend_parses_retries_and_counts_tokens(tmp_path):
+    import httpx
+
+    from openusd_assistant.judge import OpenAICompatibleBackend
+
+    calls, sleeps = [], []
+    verdict_json = json.dumps({"facts": [{"fact": "f", "covered": True}], "claims": []})
+
+    def handler(request):
+        calls.append(json.loads(request.content))
+        assert request.headers["authorization"] == "Bearer test-key"
+        assert request.url.path == "/v1/chat/completions"
+        if len(calls) == 1:
+            return httpx.Response(429, json={"error": "slow down"})
+        content = f"```json\n{verdict_json}\n```"  # fenced, as some gateways do
+        usage = {
+            "prompt_tokens": 900,
+            "completion_tokens": 120,
+            "completion_tokens_details": {"reasoning_tokens": 20},
+        }
+        return httpx.Response(
+            200, json={"choices": [{"message": {"content": content}}], "usage": usage}
+        )
+
+    backend = OpenAICompatibleBackend(
+        "https://gateway.invalid/v1/",
+        "test-key",
+        "judge-m",
+        "Grade it.",
+        transport=httpx.MockTransport(handler),
+        sleep=sleeps.append,
+    )
+    text, usage = backend.complete('{"question": "q"}')
+    assert json.loads(text)["facts"][0]["covered"] is True
+    assert usage == Usage(900, 100, 20)
+    assert sleeps == [2]
+    body = calls[-1]
+    assert body["model"] == "judge-m" and body["temperature"] == 0
+    assert body["response_format"] == {"type": "json_object"}
+    assert (
+        body["messages"][0]["content"].startswith("Grade it.")
+        and "Response JSON schema" in body["messages"][0]["content"]
+    )
+
+    record = answer_question(question(), lambda q: [CHUNK], Chat(draft()), "m")
+    prompt = tmp_path / "judge.md"
+    prompt.write_text("Grade it.", encoding="utf-8")
+    judge = Judge(
+        SimpleNamespace(judge_model="judge-m"),
+        compared_models=["m"],
+        prompt_path=prompt,
+        backend=backend,
+    )
+    verdict, _ = judge.grade(record, question())
+    assert verdict.facts[0].covered
+
+
+def test_openai_compatible_judge_needs_url_and_key(tmp_path):
+    from openusd_assistant.adapters import Settings
+
+    prompt = tmp_path / "judge.md"
+    prompt.write_text("x", encoding="utf-8")
+    settings = Settings(_env_file=None, judge_model="j", judge_provider="openai-compatible")
+    with pytest.raises(ValueError, match="OPENUSD_JUDGE_BASE_URL"):
+        Judge(settings, compared_models=[], prompt_path=prompt)
+    keyed = Settings(
+        _env_file=None,
+        judge_model="j",
+        judge_provider="openai-compatible",
+        judge_base_url="https://g.invalid/v1",
+        judge_api_key="secret-value",
+    )
+    assert "secret-value" not in repr(keyed)
+    assert Judge(keyed, compared_models=[], prompt_path=prompt).provider == "openai-compatible"

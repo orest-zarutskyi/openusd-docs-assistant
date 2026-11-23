@@ -161,7 +161,7 @@ def answers_report(results: dict[str, dict], args, judge: Judge, judge_cost: flo
         f"# Answers: {args.questions.as_posix()}",
         "",
         f"- Answers: `{args.answers_dir.as_posix()}`; billing tier for Gemini calls: {args.tier}.",
-        f"- Judge: `{judge.model}`, prompt `eval/prompts/judge.md` (sha256 `{judge.prompt_sha256}`); "
+        f"- Judge: `{judge.model}` via {judge.provider}, prompt `eval/prompts/judge.md` (sha256 `{judge.prompt_sha256}`); "
         f"judge cost of this run ${judge_cost:.4f}.",
         f"- Prices: `{args.pricing.as_posix()}`; Ollama models are $0.",
         "",
