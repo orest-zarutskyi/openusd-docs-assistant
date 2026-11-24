@@ -1,6 +1,6 @@
 # Retrieval: eval/heldout.jsonl
 
-- Date: 2026-11-24; code commit `48c5b32` (recorded as `fc2c8f3` before the commit author was rewritten; same tree).
+- Date: 2026-11-24; code commit `a42ef0d`.
 - Corpus: OpenUSD v26.08 `ee47c679abde`, 76 documents, 952 chunks.
 - Questions: `eval/heldout.jsonl`, 24 total: 3 comparison, 11 lookup, 4 paraphrase, 6 unanswerable.
 - Dense: `nomic-embed-text:v1.5` (digest `0a109f422b47`) on Ollama 0.40.17, embedded Qdrant, cosine similarity.

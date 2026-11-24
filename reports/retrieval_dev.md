@@ -1,6 +1,6 @@
 # Retrieval: eval/questions.jsonl
 
-- Date: 2026-11-23; code commit `99c963f`.
+- Date: 2026-11-23; code commit `3bb0580`.
 - Corpus: OpenUSD v26.08 `ee47c679abde`, 76 documents, 952 chunks.
 - Questions: `eval/questions.jsonl`, 31 total: 3 comparison, 19 lookup, 4 paraphrase, 5 unanswerable.
 - Dense: `nomic-embed-text:v1.5` (digest `0a109f422b47`) on Ollama 0.40.16, embedded Qdrant, cosine similarity.
