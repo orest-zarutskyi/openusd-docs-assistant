@@ -173,3 +173,21 @@ def test_judge_answers_keeps_verdicts_when_a_run_fails_midway(tmp_path, monkeypa
     assert len(calls) == 3 + 2 + 2
     final = eval_commands._verdict_cache(answers / "verdicts.jsonl")
     assert all(row["verdict"] for row in final.values()) and len(final) == 4
+
+
+def test_calibration_report_lists_agreement_and_disagreements(tmp_path):
+    from types import SimpleNamespace
+
+    from openusd_assistant.eval_commands import calibration_report
+
+    result = {
+        "labels": 2,
+        "facts": {"n": 3, "agreement": 2 / 3, "kappa": 0.4},
+        "fully_grounded": {"n": 2, "agreement": 1.0, "kappa": None},
+        "disagreements": ["L01: fact 1 reference=True judge=False"],
+    }
+    args = SimpleNamespace(labels=Path("eval/llm_labels.jsonl"), answers_dir=Path("reports/a"))
+    text = calibration_report(result, args, ["judge-x"])
+    assert "| Expected fact covered | 3 | 67% | 0.40 |" in text
+    assert "| Answer fully grounded | 2 | 100% | — |" in text
+    assert "- L01: fact 1 reference=True judge=False" in text and "`judge-x`" in text

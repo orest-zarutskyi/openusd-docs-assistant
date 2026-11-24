@@ -143,9 +143,12 @@ def main() -> int:
         "reverify-answers", help="Re-apply the citation check to saved answers."
     )
     reverify.add_argument("--answers-dir", type=Path, default=Path("reports/answers/dev"))
-    calib = commands.add_parser("calibrate-judge", help="Compare judge verdicts to human labels.")
+    calib = commands.add_parser(
+        "calibrate-judge", help="Compare judge verdicts to reference labels."
+    )
     calib.add_argument("--labels", type=Path, default=Path("eval/llm_labels.jsonl"))
     calib.add_argument("--answers-dir", type=Path, default=Path("reports/answers/dev"))
+    calib.add_argument("--report", type=Path, default=Path("reports/judge_calibration_dev.md"))
     serve = commands.add_parser("serve")
     serve.add_argument("--manifest", type=Path, default=Path("corpus/manifest.json"))
     serve.add_argument("--source-dir", type=Path, help="Use a verified local source snapshot.")

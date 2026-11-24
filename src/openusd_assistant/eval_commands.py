@@ -247,7 +247,43 @@ def calibrate_judge(args) -> None:
         key: Verdict.model_validate(row["verdict"]) if row["verdict"] else None
         for key, row in cache.items()
     }
-    print(json.dumps(calibrate(labels, verdicts), indent=2))
+    result = calibrate(labels, verdicts)
+    print(json.dumps(result, indent=2))
+    if getattr(args, "report", None):
+        judges = sorted({row["judge"] for row in cache.values()})
+        args.report.parent.mkdir(parents=True, exist_ok=True)
+        args.report.write_text(
+            calibration_report(result, args, judges), encoding="utf-8", newline="\n"
+        )
+
+
+def calibration_report(result: dict, args, judges: list[str]) -> str:
+    def row(name, part):
+        kappa = "—" if part["kappa"] is None else f"{part['kappa']:.2f}"
+        agreement = "—" if part["agreement"] is None else f"{part['agreement']:.0%}"
+        return f"| {name} | {part['n']} | {agreement} | {kappa} |"
+
+    return (
+        "\n".join(
+            [
+                f"# Judge calibration: {args.labels.as_posix()}",
+                "",
+                f"- Judge: {', '.join(f'`{j}`' for j in judges)}; verdicts from "
+                f"`{(args.answers_dir / 'verdicts.jsonl').as_posix()}`.",
+                f"- Reference labels: {result['labels']} answers.",
+                "",
+                "| Decision | n | Agreement | Cohen's kappa |",
+                "| --- | --- | --- | --- |",
+                row("Expected fact covered", result["facts"]),
+                row("Answer fully grounded", result["fully_grounded"]),
+                "",
+                "Disagreements:",
+                "",
+                *(f"- {d}" for d in result["disagreements"] or ["none"]),
+            ]
+        )
+        + "\n"
+    )
 
 
 def compare_variants(args) -> None:
