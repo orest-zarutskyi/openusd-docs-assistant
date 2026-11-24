@@ -129,7 +129,7 @@ class OpenAICompatibleBackend:
             usage = data.get("usage") or {}
             reasoning = (usage.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0
             text = data["choices"][0]["message"].get("content") or ""
-            return _strip_fence(text), Usage(
+            return _json_object(text), Usage(
                 usage.get("prompt_tokens", 0),
                 usage.get("completion_tokens", 0) - reasoning,
                 reasoning,
@@ -137,13 +137,14 @@ class OpenAICompatibleBackend:
         raise DependencyUnavailable("The judge endpoint kept failing.")
 
 
-def _strip_fence(text: str) -> str:
-    """Some gateways wrap JSON in a Markdown code fence despite json_object mode."""
-    text = text.strip()
-    if text.startswith("```"):
-        text = text.split("\n", 1)[1] if "\n" in text else ""
-        text = text.rsplit("```", 1)[0]
-    return text.strip()
+def _json_object(text: str) -> str:
+    """The outermost JSON object in a reply.
+
+    Despite json_object mode, gateways sometimes wrap the object in a Markdown fence or
+    in tags such as ``<escape>…</escape>``; validation of what is inside stays strict.
+    """
+    start, end = text.find("{"), text.rfind("}")
+    return text[start : end + 1] if start != -1 and end > start else text.strip()
 
 
 class Judge:

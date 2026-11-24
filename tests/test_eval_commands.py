@@ -163,3 +163,13 @@ def test_judge_answers_keeps_verdicts_when_a_run_fails_midway(tmp_path, monkeypa
     rows = (answers / "verdicts.jsonl").read_text(encoding="utf-8").splitlines()
     assert len(calls) == 3 and len(rows) == 2  # the other variant was never judged
     assert "ollama:m@nothink" not in args.report.read_text(encoding="utf-8")
+
+    # An unusable reply is stored as a failure and asked again on the next run.
+    verdict = "not json"
+    args.models = "ollama:m@nothink"
+    eval_commands.judge_answers(args, settings)
+    verdict = '{"facts":[{"fact":"F.","covered":true}],"claims":[]}'
+    eval_commands.judge_answers(args, settings)
+    assert len(calls) == 3 + 2 + 2
+    final = eval_commands._verdict_cache(answers / "verdicts.jsonl")
+    assert all(row["verdict"] for row in final.values()) and len(final) == 4

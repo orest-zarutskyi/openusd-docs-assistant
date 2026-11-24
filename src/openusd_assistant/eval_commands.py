@@ -113,13 +113,15 @@ def judge_answers(args, settings) -> None:
 
     def cached(key) -> bool:
         row = cache.get(key)
-        return bool(row) and (row["judge"], row["prompt_sha256"]) == (
-            judge.model,
-            judge.prompt_sha256,
+        return (
+            bool(row)
+            and row["verdict"] is not None
+            and (row["judge"], row["prompt_sha256"]) == (judge.model, judge.prompt_sha256)
         )
 
     # Append each verdict as it arrives so a quota error or crash mid-run keeps the
-    # finished ones; a rerun skips them. Later rows win when the cache is reloaded.
+    # finished ones; a rerun skips them and asks again only where the judge's output
+    # was unusable. Later rows win when the cache is reloaded.
     cache_path.parent.mkdir(parents=True, exist_ok=True)
     with cache_path.open("a", encoding="utf-8", newline="\n") as log:
         for spec, records in runs.items():

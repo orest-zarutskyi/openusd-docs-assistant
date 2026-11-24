@@ -346,3 +346,12 @@ def test_openai_compatible_judge_needs_url_and_key(tmp_path):
     judge = Judge(keyed, compared_models=[], prompt_path=prompt)
     assert judge.provider == "openai-compatible"
     assert judge.route == "g.invalid (OpenAI-compatible gateway)"
+
+
+def test_judge_reply_is_cut_to_the_json_object():
+    from openusd_assistant.judge import _json_object
+
+    obj = '{"facts": [], "claims": [{"claim": "a {b}", "verdict": "supported"}]}'
+    for wrapped in (obj, f"```json\n{obj}\n```", f"<escape>{obj}</escape>", f"Here:\n{obj}\n"):
+        assert json.loads(_json_object(wrapped)) == json.loads(obj)
+    assert _json_object("  no json  ") == "no json"
