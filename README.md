@@ -1,5 +1,6 @@
 # OpenUSD Docs Assistant
-n[![Checks](https://github.com/orest-zarutskyi/openusd-docs-assistant/actions/workflows/checks.yml/badge.svg)](https://github.com/orest-zarutskyi/openusd-docs-assistant/actions/workflows/checks.yml)
+
+[![Checks](https://github.com/orest-zarutskyi/openusd-docs-assistant/actions/workflows/checks.yml/badge.svg)](https://github.com/orest-zarutskyi/openusd-docs-assistant/actions/workflows/checks.yml)
 
 A local question-answering service for OpenUSD scene composition. It finds relevant passages in a fixed set of upstream docs and cites the exact source lines. If the retrieved text is insufficient, it returns a clear refusal. The service runs independently of Houdini.
 
