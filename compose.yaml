@@ -5,7 +5,9 @@ services:
     # Settings; override them here only after re-tuning on dev.
     environment:
       OPENUSD_QDRANT_URL: http://qdrant:6333
-      OPENUSD_OLLAMA_URL: ${OPENUSD_OLLAMA_URL:-http://host.docker.internal:11434}
+      # Not OPENUSD_OLLAMA_URL: Compose reads .env, where that points at 127.0.0.1 for local
+      # runs, and inside the container 127.0.0.1 is the container itself.
+      OPENUSD_OLLAMA_URL: ${OPENUSD_DOCKER_OLLAMA_URL:-http://host.docker.internal:11434}
       OPENUSD_CHAT_MODEL: ${OPENUSD_CHAT_MODEL:-qwen3:4b}
       OPENUSD_EMBEDDING_MODEL: ${OPENUSD_EMBEDDING_MODEL:-nomic-embed-text:v1.5}
       OPENUSD_EMBEDDING_REVISION: ${OPENUSD_EMBEDDING_REVISION:-}
