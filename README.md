@@ -7,7 +7,7 @@ A local question-answering service for OpenUSD scene composition. It finds relev
 1. **Corpus and examples.** Pin the text documentation from OpenUSD 26.08, retain license notices and exact line references, and write evaluation questions with expected passages or refusals. *Done: all 76 RST files.*
 2. **Working local API.** Index documents in Qdrant. Use a small LangGraph workflow for retrieval, generation and citation validation. Run inference through a configurable model and expose the workflow through FastAPI. A repeated index build should not duplicate points. *Done.*
 3. **Evaluation and tests.** Compare lexical, dense, hybrid and reranked retrieval, measure whether answers are supported by sources and whether the system refuses appropriately, and keep a held-out set. *Done: results below.*
-4. **Reproduction and demo.** Document setup, provide Docker Compose and CI checks, and record a short demo showing an answer, its source and a refusal.
+4. **Reproduction and demo.** Document setup, provide Docker Compose and CI checks, and record a short demo showing an answer, its source and a refusal. *In progress: a CI workflow (ruff lint and format check, pytest on Ubuntu and Windows) is defined but has not run yet, because the repository is not on GitHub; and [docs/demo.md](docs/demo.md) records real `/ask` responses. Docker Compose is updated for the reranker but not yet run.*
 
 The first public release covers English questions on OpenUSD documentation. A Houdini integration, one render-log diagnosis scenario and hosted deployment are later options.
 
@@ -48,7 +48,9 @@ Cost per 100 questions uses official paid Gemini prices ([pricing.json](eval/pri
 | qwen3.5:4b, no thinking (Ollama) | dev | 90% | 100% | 23% | 75% | 94% | 2.4 | 0 |
 | qwen3.5:4b, no thinking (Ollama) | held-out | 75% | 100% | 33% | 75% | 100% | 2.2 | 0 |
 
-No model answered an unanswerable question on either set. Sources: [answers_dev.md](reports/answers_dev.md), [answers_heldout.md](reports/answers_heldout.md).
+No model answered an unanswerable question on either set. Sources: [answers_dev.md](reports/answers_dev.md), [answers_heldout.md](reports/answers_heldout.md). Every answer is shown side by side with its quotes and the judge's notes in [answers_dev.html](reports/answers_dev.html) and [answers_heldout.html](reports/answers_heldout.html); download and open them locally, because GitHub shows HTML as source.
+
+**Without the retrieval gate.** The six dev questions the gate refused were answered again with the gate off ([refusals_nogate_dev.md](reports/refusals_nogate_dev.md)). All three models refused all five unanswerable ones on their own. On the answerable `working-set` question, qwen3:4b gave a valid answer, Flash-Lite an invalid citation and qwen3.5:4b a refusal. On dev, the gate therefore saves model calls rather than preventing wrong answers, and it costs one answerable question. The gate was fitted on these same five questions, so this is a dev observation, not a held-out result.
 
 ### Judge calibration
 
@@ -68,7 +70,7 @@ The judge was the stricter side in all three disagreements, each a borderline ca
 - **Judge through a reseller.** The Gemini free tier allows 20 judge requests a day, so the judge ran through the [apils.in](https://apils.in) OpenAI-compatible gateway, a third-party reseller. The model behind it cannot be verified independently; the calibration numbers above are the check.
 - **Free-tier runs.** Flash-Lite answers were generated on the free tier. Costs are list prices, not what the runs were billed. Electricity and hardware for local models are not counted.
 - **Coverage, not correctness, at retrieval time.** The refusal gate only checks whether the corpus has something close to the question. On held-out it refused 2 answerable questions and let 1 unanswerable one through; the model then refused that one.
-- **Not rerun after this stage.** The Docker Compose setup was not rebuilt with the reranker. Ollama moved from 0.40.16 (dev) to 0.40.17 (held-out); the embedding model digest stayed the same.
+- **Not rerun after this stage.** Docker is not installed on the evaluation machine, so the updated Docker Compose setup has not been built or run. Ollama moved from 0.40.16 (dev) to 0.40.17 (held-out); the embedding model digest stayed the same.
 
 Design decisions are recorded in [docs/decisions](docs/decisions/README.md).
 
@@ -115,6 +117,8 @@ uv run --locked openusd-assistant calibrate-judge
 ```
 
 `compare-variants` reads every answer file in `reports/answers/dev`. The dev report there also covers the variants that were not chosen, such as `ollama:qwen3:4b@nothink` and `gemini:gemini-3.5-flash-lite@level=low`.
+
+`openusd-assistant answers-page` writes the side-by-side HTML page, and `refusal-report` summarises a run made with `OPENUSD_RERANK_MIN_SCORE=-1000000` and `eval-answers --ids ... --out-dir reports/answers/dev_nogate`.
 
 The judge needs `OPENUSD_JUDGE_MODEL`, plus either the Gemini key or `OPENUSD_JUDGE_PROVIDER=openai-compatible` with a gateway URL and key. Held-out commands take `--final`, `--questions eval/heldout.jsonl` and their own `--out-dir`, `--answers-dir` or `--report`. Without `--final`, the CLI refuses held-out questions.
 
