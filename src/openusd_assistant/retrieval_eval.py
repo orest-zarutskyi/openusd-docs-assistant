@@ -153,6 +153,38 @@ def evaluate_searcher(
     }
 
 
+def gate_at(
+    threshold: float | None,
+    answerable: Sequence[float | None],
+    unanswerable: Sequence[float | None],
+) -> Gate:
+    """How a fixed threshold (frozen on dev) performs; a missing score is refused, as in gated()."""
+    if threshold is None:
+        return Gate(None, 1.0, 0.0)
+    kept = sum(s is not None and s >= threshold for s in answerable)
+    refused = sum(s is None or s < threshold for s in unanswerable)
+    return Gate(
+        threshold,
+        kept / len(answerable) if answerable else 0.0,
+        refused / len(unanswerable) if unanswerable else 0.0,
+    )
+
+
+def apply_frozen_gates(results: dict[str, dict], thresholds: dict[str, float | None]) -> None:
+    """Replace each mode's fitted gate with its dev threshold; modes without one get no gate."""
+    for name, r in results.items():
+        cases = r["cases"]
+        r["gate"] = (
+            gate_at(
+                thresholds[name],
+                [c["confidence"] for c in cases if c["answerable"]],
+                [c["confidence"] for c in cases if not c["answerable"]],
+            )
+            if name in thresholds
+            else None
+        )
+
+
 def choose_winner(results: dict[str, dict], tie: float = 0.01) -> str:
     """Pre-registered rule: highest nDCG@10; within ``tie`` of the best, lowest p95 latency."""
     best = max(result["ndcg@10"] for result in results.values())
@@ -167,10 +199,21 @@ def choose_top_k(hit_at_k: dict[int, float], answerable: int, options=(3, 5, 8))
 
 
 def markdown_report(
-    results: dict[str, dict], *, winner: str, top_k: int, title: str, setup: Sequence[str]
+    results: dict[str, dict],
+    *,
+    winner: str,
+    top_k: int,
+    title: str,
+    setup: Sequence[str],
+    frozen: bool = False,
 ) -> str:
+    """Comparison report. With ``frozen`` (held-out), ``winner``, ``top_k`` and the gates are
+    the dev choices applied unchanged, and nothing is selected on these questions."""
+
     def f(value: float) -> str:
         return f"{value:.3f}"
+
+    label = "deployed" if frozen else "winner"
 
     lines = [
         f"# {title}",
@@ -184,15 +227,21 @@ def markdown_report(
         "| --- | --- | --- | --- | --- | --- | --- |",
     ]
     for name, r in results.items():
-        mark = " **(winner)**" if name == winner else ""
+        mark = f" **({label})**" if name == winner else ""
         lines.append(
             f"| {name}{mark} | {f(r['hit@5'])} | {f(r['mrr@5'])} | {f(r['ndcg@10'])} | "
             f"{f(r['hit@5_strict'])} | {r['latency_ms']['p50']:.0f} | {r['latency_ms']['p95']:.0f} |"
         )
     lines += [
         "",
-        "Winner rule, fixed before the run: highest nDCG@10; modes within 0.01 of it are "
-        "decided by the lower p95 latency.",
+        (
+            "Held-out run: every setting was frozen on dev (`reports/retrieval_dev.md`) and "
+            "nothing below was selected on these questions. **(deployed)** marks the mode "
+            "`/ask` uses."
+            if frozen
+            else "Winner rule, fixed before the run: highest nDCG@10; modes within 0.01 of it "
+            "are decided by the lower p95 latency."
+        ),
         "",
         "## Hit rate by cut-off",
         "",
@@ -203,14 +252,24 @@ def markdown_report(
             for name, r in results.items()
         ),
         "",
-        f"top_k for `/ask`: **{top_k}**, the smallest of 3, 5, 8 whose hit rate for the winner "
-        "is within one question of its hit@10.",
+        (
+            f"top_k for `/ask`: **{top_k}**, frozen on dev."
+            if frozen
+            else f"top_k for `/ask`: **{top_k}**, the smallest of 3, 5, 8 whose hit rate for "
+            "the winner is within one question of its hit@10."
+        ),
         "",
         "## Refusal gate",
         "",
-        "The threshold maximizes balanced accuracy over dev questions: answerable questions "
-        "must pass, unanswerable ones must be refused. BM25 has no calibrated score, so it "
-        "cannot refuse at retrieval time.",
+        (
+            "Thresholds are the dev settings `/ask` applies (`min_score` for dense and hybrid, "
+            "`rerank_min_score` for the deployed reranker); a mode with no frozen threshold "
+            "shows none. BM25 has no calibrated score, so it cannot refuse at retrieval time."
+            if frozen
+            else "The threshold maximizes balanced accuracy over dev questions: answerable "
+            "questions must pass, unanswerable ones must be refused. BM25 has no calibrated "
+            "score, so it cannot refuse at retrieval time."
+        ),
         "",
         "| Mode | Gate score | Threshold | Answerable kept | Unanswerable refused |",
         "| --- | --- | --- | --- | --- |",
@@ -219,6 +278,9 @@ def markdown_report(
     for name, r in results.items():
         g = r["gate"]
         score = gate_score.get(name, "top cross-encoder score")
+        if g is None:
+            lines.append(f"| {name} | {score} | not frozen on dev | — | — |")
+            continue
         threshold = "—" if g.threshold is None else f"{g.threshold:.4f}"
         lines.append(
             f"| {name} | {score} | {threshold} | {f(g.answerable_kept)} | {f(g.unanswerable_refused)} |"

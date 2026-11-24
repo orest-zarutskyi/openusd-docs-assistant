@@ -130,3 +130,29 @@ def test_evaluate_searcher_end_to_end_and_report():
     )
     assert "| dense **(winner)** | 0.500 | 0.500 |" in report
     assert "| dense | `q2` |" in report
+
+
+def test_held_out_report_applies_frozen_dev_gates_and_selects_nothing():
+    from openusd_assistant.retrieval_eval import apply_frozen_gates, gate_at
+
+    assert gate_at(0.5, [0.9, 0.4, None], [0.6, None]) == Gate(0.5, 1 / 3, 0.5)
+    assert gate_at(None, [0.9], [0.1]) == Gate(None, 1.0, 0.0)
+
+    hit, miss = chunk(9, 12), chunk(40, 41)
+    questions = [make_question("q1"), make_question("u1", answerable=False)]
+    searcher = Scripted({questions[0].question: ([hit], 0.9), questions[1].question: ([miss], 0.8)})
+    results = {
+        "dense": evaluate_searcher(questions, searcher, chunks=[hit, miss]),
+        "hybrid-rerank (other)": evaluate_searcher(questions, searcher, chunks=[hit, miss]),
+    }
+    apply_frozen_gates(results, {"dense": 0.85})
+    assert results["dense"]["gate"] == Gate(0.85, 1.0, 1.0)  # not refitted on these questions
+    assert results["hybrid-rerank (other)"]["gate"] is None
+    report = markdown_report(
+        results, winner="dense", top_k=8, title="Held-out", setup=[], frozen=True
+    )
+    assert "| dense **(deployed)** |" in report and "(winner)" not in report
+    assert "top_k for `/ask`: **8**, frozen on dev." in report
+    assert (
+        "| hybrid-rerank (other) | top cross-encoder score | not frozen on dev | — | — |" in report
+    )

@@ -28,7 +28,13 @@ from .retrieval import (
     build_retriever,
     fastembed_scorer,
 )
-from .retrieval_eval import choose_top_k, choose_winner, evaluate_searcher, markdown_report
+from .retrieval_eval import (
+    apply_frozen_gates,
+    choose_top_k,
+    choose_winner,
+    evaluate_searcher,
+    markdown_report,
+)
 from .setup_info import describe_setup
 from .snapshot import build_manifest, corpus_report, github_file, github_tree
 
@@ -56,11 +62,31 @@ def run_retrieval_eval(args, settings, manifest, chunks, index) -> None:
             raise ValueError(f"Unknown retrieval mode: {mode}")
 
     results = {name: evaluate_searcher(questions, s, chunks) for name, s in searchers.items()}
-    winner = choose_winner(results)
-    top_k = choose_top_k(results[winner]["hit@k"], results[winner]["answerable"])
+    frozen = bool(getattr(args, "final", False))
+    if frozen:
+        # Held-out: apply the dev choices as /ask does and select nothing on these questions.
+        deployed_rerank = f"hybrid-rerank ({settings.reranker_model.split('/')[-1]})"
+        winner = (
+            deployed_rerank
+            if settings.retrieval_mode == "hybrid-rerank"
+            else settings.retrieval_mode
+        )
+        top_k = settings.top_k
+        apply_frozen_gates(
+            results,
+            {
+                "bm25": None,
+                "dense": settings.min_score,
+                "hybrid": settings.min_score,
+                deployed_rerank: settings.rerank_min_score,
+            },
+        )
+    else:
+        winner = choose_winner(results)
+        top_k = choose_top_k(results[winner]["hit@k"], results[winner]["answerable"])
     summary = {
         name: {key: r[key] for key in ("hit@5", "mrr@5", "ndcg@10", "latency_ms")}
-        | {"gate_threshold": r["gate"].threshold}
+        | {"gate_threshold": r["gate"].threshold if r["gate"] else None}
         for name, r in results.items()
     }
     print(json.dumps({"winner": winner, "top_k": top_k, "modes": summary}, indent=2))
@@ -72,6 +98,7 @@ def run_retrieval_eval(args, settings, manifest, chunks, index) -> None:
             top_k=top_k,
             title=f"Retrieval: {args.questions.as_posix()}",
             setup=setup,
+            frozen=frozen,
         )
         args.report.parent.mkdir(parents=True, exist_ok=True)
         args.report.write_text(report, encoding="utf-8", newline="\n")
