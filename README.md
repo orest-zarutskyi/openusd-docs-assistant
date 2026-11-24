@@ -4,12 +4,16 @@
 
 A local question-answering service for OpenUSD scene composition. It finds relevant passages in a fixed set of upstream docs and cites the exact source lines. If the retrieved text is insufficient, it returns a clear refusal. The service runs independently of Houdini.
 
+![Demo: a cited answer and a refusal](docs/media/openusd-demo.gif)
+
+A 36-second motion demo ([MP4](docs/media/openusd-demo.mp4)) built from real `/ask` responses and measured results. It is rendered with [Remotion](https://www.remotion.dev/) from [demo/](demo), and the recorded responses are in [docs/demo.md](docs/demo.md).
+
 ## Development plan
 
 1. **Corpus and examples.** Pin the text documentation from OpenUSD 26.08, retain license notices and exact line references, and write evaluation questions with expected passages or refusals. *Done: all 76 RST files.*
 2. **Working local API.** Index documents in Qdrant. Use a small LangGraph workflow for retrieval, generation and citation validation. Run inference through a configurable model and expose the workflow through FastAPI. A repeated index build should not duplicate points. *Done.*
 3. **Evaluation and tests.** Compare lexical, dense, hybrid and reranked retrieval, measure whether answers are supported by sources and whether the system refuses appropriately, and keep a held-out set. *Done: results below.*
-4. **Reproduction and demo.** Document setup, provide Docker Compose and CI checks, and record a short demo showing an answer, its source and a refusal. *In progress: [CI](.github/workflows/checks.yml) runs ruff lint and format checks and pytest on Ubuntu and Windows for every push, and [docs/demo.md](docs/demo.md) records real `/ask` responses. Docker Compose is updated for the reranker but not yet run.*
+4. **Reproduction and demo.** Document setup, provide Docker Compose and CI checks, and record a short demo showing an answer, its source and a refusal. *In progress: [CI](.github/workflows/checks.yml) runs ruff lint and format checks and pytest on Ubuntu and Windows for every push, [docs/demo.md](docs/demo.md) records real `/ask` responses, and a motion demo is rendered from them. Docker Compose is updated for the reranker but not yet run.*
 
 The first public release covers English questions on OpenUSD documentation. A Houdini integration, one render-log diagnosis scenario and hosted deployment are later options.
 

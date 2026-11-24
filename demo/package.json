@@ -1,0 +1,20 @@
+{
+  "name": "openusd-docs-assistant-demo",
+  "private": true,
+  "description": "Motion demo of the OpenUSD Docs Assistant, rendered with Remotion from real /ask responses.",
+  "scripts": {
+    "studio": "remotion studio src/index.ts",
+    "render": "remotion render src/index.ts Demo out/openusd-demo.mp4 --codec=h264 --crf=20",
+    "still": "remotion still src/index.ts Demo out/still.png"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.546",
+    "react": "19.3.1",
+    "react-dom": "19.3.1",
+    "remotion": "4.0.546"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.0",
+    "typescript": "^5.6.0"
+  }
+}

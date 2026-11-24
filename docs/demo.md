@@ -9,6 +9,18 @@ Recorded on 2026-11-24 against a local server:
 Responses are copied from `POST /ask`. Long quotes are shortened with `…`, and nothing else is
 changed. The same questions can be asked on the page at `http://127.0.0.1:8000/`.
 
+## Motion demo
+
+[openusd-demo.mp4](media/openusd-demo.mp4) (36 s, 1080p) and [openusd-demo.gif](media/openusd-demo.gif) show the two responses below. The reranker scores in the video come from the deployed reranker with the shipped settings: 0.25 for the payload question and −7.76 for the Pyro question, against the gate of −0.98. Every figure is listed with its source in [demo/src/data.ts](../demo/src/data.ts). To render it again:
+
+```powershell
+cd demo
+npm install
+npm run render
+```
+
+Remotion is free for individuals and small teams; larger companies need a company license ([remotion.dev/license](https://www.remotion.dev/license)).
+
 ## 1. A question the corpus answers
 
 ```json
