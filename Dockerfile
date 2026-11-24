@@ -12,6 +12,8 @@ COPY corpus ./corpus
 RUN uv sync --locked --no-dev
 RUN useradd --create-home --uid 10001 appuser
 USER appuser
+# Owned by appuser, so a fresh named volume mounted here is writable for the reranker cache.
+RUN mkdir -p /home/appuser/fastembed
 
 EXPOSE 8000
 ENTRYPOINT ["/app/.venv/bin/openusd-assistant"]
