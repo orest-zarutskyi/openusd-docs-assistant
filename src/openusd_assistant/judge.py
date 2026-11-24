@@ -164,9 +164,13 @@ class Judge:
         self.prompt = prompt_path.read_text(encoding="utf-8")
         self.prompt_sha256 = hashlib.sha256(self.prompt.encode()).hexdigest()[:12]
         self.provider = getattr(settings, "judge_provider", "gemini")
+        # Where the judge actually ran, for reports: the Gemini API or a gateway's host.
+        self.route = "the Gemini API"
         if backend is None and self.provider == "openai-compatible":
             if not settings.judge_base_url or settings.judge_api_key is None:
                 raise ValueError("Set OPENUSD_JUDGE_BASE_URL and OPENUSD_JUDGE_API_KEY in .env.")
+            host = httpx.URL(settings.judge_base_url).host
+            self.route = f"{host} (OpenAI-compatible gateway)"
             backend = OpenAICompatibleBackend(
                 settings.judge_base_url,
                 settings.judge_api_key.get_secret_value(),

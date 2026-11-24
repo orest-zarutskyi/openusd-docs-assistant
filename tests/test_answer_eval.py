@@ -343,4 +343,6 @@ def test_openai_compatible_judge_needs_url_and_key(tmp_path):
         judge_api_key="secret-value",
     )
     assert "secret-value" not in repr(keyed)
-    assert Judge(keyed, compared_models=[], prompt_path=prompt).provider == "openai-compatible"
+    judge = Judge(keyed, compared_models=[], prompt_path=prompt)
+    assert judge.provider == "openai-compatible"
+    assert judge.route == "g.invalid (OpenAI-compatible gateway)"
