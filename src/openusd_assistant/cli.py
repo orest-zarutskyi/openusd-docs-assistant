@@ -16,6 +16,7 @@ from .eval_commands import (
     compare_variants,
     generate_answers,
     judge_answers,
+    model_refusal_report,
     reverify_answers,
     write_label_template,
 )
@@ -146,6 +147,7 @@ def main() -> int:
     answers.add_argument("--models", required=True, help="e.g. ollama:qwen3:4b,gemini:<id>")
     answers.add_argument("--out-dir", type=Path, default=Path("reports/answers/dev"))
     answers.add_argument("--limit", type=int, default=0, help="Only the first N questions.")
+    answers.add_argument("--ids", default="", help="Only these question IDs (comma-separated).")
     answers.add_argument("--final", action="store_true", help="Allow a held-out run.")
     judged = commands.add_parser("judge-answers", help="Judge saved answers and write a report.")
     judged.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))
@@ -161,6 +163,12 @@ def main() -> int:
     labels.add_argument("--out", type=Path, default=Path("eval/llm_labels.jsonl"))
     labels.add_argument("--models", default="", help="Only these model specs (comma-separated).")
     labels.add_argument("-n", type=int, default=20)
+    refusals = commands.add_parser(
+        "refusal-report", help="Report model refusals from a run without the retrieval gate."
+    )
+    refusals.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))
+    refusals.add_argument("--answers-dir", type=Path, default=Path("reports/answers/dev_nogate"))
+    refusals.add_argument("--report", type=Path, default=Path("reports/refusals_nogate_dev.md"))
     variants = commands.add_parser("compare-variants", help="Pick reasoning variants on dev.")
     variants.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))
     variants.add_argument("--answers-dir", type=Path, default=Path("reports/answers/dev"))
@@ -217,6 +225,9 @@ def main() -> int:
             return 0
         if args.command == "reverify-answers":
             reverify_answers(args)
+            return 0
+        if args.command == "refusal-report":
+            model_refusal_report(args)
             return 0
         if args.command == "compare-variants":
             compare_variants(args)

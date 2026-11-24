@@ -68,6 +68,11 @@ def price_for(spec: str, prices: dict[str, Price]) -> Price:
 
 def generate_answers(args, settings, retrieve, ollama_models_factory) -> None:
     questions = load_questions(args.questions)[: args.limit or None]
+    if ids := getattr(args, "ids", ""):
+        wanted = set(ids.split(","))
+        if missing := wanted - {q.id for q in questions}:
+            raise ValueError(f"Unknown question IDs: {sorted(missing)}")
+        questions = [q for q in questions if q.id in wanted]
     contexts: dict[str, list] = {}
 
     def shared_retrieve(text: str):
@@ -356,3 +361,49 @@ def reverify_answers(args) -> None:
         ]
         save_records(path, after)
         print(f"{path.name}: {len(changed)} changed {changed}")
+
+
+def model_refusal_report(args) -> None:
+    """How each model handles questions it sees with no retrieval gate."""
+    questions = {q.id: q for q in load_questions(args.questions)}
+    files = [f for f in sorted(args.answers_dir.glob("*.jsonl")) if f.name != "verdicts.jsonl"]
+    runs = {load_records(f)[0].model: load_records(f) for f in files}
+    claimed = {"answer", "invalid_citation"}
+    lines = [
+        f"# Model refusals without the retrieval gate: {args.questions.as_posix()}",
+        "",
+        f"- Answers: `{args.answers_dir.as_posix()}`, generated with the gate disabled for the "
+        "questions the dev gate refused; every other question had the same context as in "
+        "`reports/answers/dev`.",
+        "- Correct for an unanswerable question: the model refuses. Claimed answers count "
+        "whether or not their quotes were valid.",
+        "",
+        "| Model | Unanswerable seen | Refused by the model | Claimed an answer | Invalid output | "
+        "Errors |",
+        "| --- | --- | --- | --- | --- | --- |",
+    ]
+    for spec, records in runs.items():
+        unanswerable = [r for r in records if not questions[r.id].answerable]
+        lines.append(
+            f"| `{spec}` | {len(unanswerable)} | "
+            f"{sum(r.outcome == 'refused_model' for r in unanswerable)} | "
+            f"{sum(r.outcome in claimed for r in unanswerable)} | "
+            f"{sum(r.outcome == 'invalid_output' for r in unanswerable)} | "
+            f"{sum(r.outcome == 'error' for r in unanswerable)} |"
+        )
+    lines += [
+        "",
+        "| Model | Question | Answerable | Outcome | Answer (start) |",
+        "| --- |" + " --- |" * 4,
+    ]
+    for spec, records in runs.items():
+        for r in records:
+            text = " ".join(r.answer.split())[:120].replace("|", "\\|")
+            lines.append(
+                f"| `{spec}` | `{r.id}` | {'yes' if questions[r.id].answerable else 'no'} | "
+                f"{r.outcome} | {text} |"
+            )
+    report = "\n".join(lines) + "\n"
+    args.report.parent.mkdir(parents=True, exist_ok=True)
+    args.report.write_text(report, encoding="utf-8", newline="\n")
+    print(report)

@@ -191,3 +191,33 @@ def test_calibration_report_lists_agreement_and_disagreements(tmp_path):
     assert "| Expected fact covered | 3 | 67% | 0.40 |" in text
     assert "| Answer fully grounded | 2 | 100% | — |" in text
     assert "- L01: fact 1 reference=True judge=False" in text and "`judge-x`" in text
+
+
+def test_refusal_report_counts_model_refusals_on_unanswerable_questions(tmp_path):
+    from types import SimpleNamespace
+
+    from openusd_assistant.answer_eval import AnswerRecord, save_records
+    from openusd_assistant.eval_commands import model_refusal_report
+
+    questions = tmp_path / "questions.jsonl"
+    questions.write_text(
+        '{"id":"a","question":"What is a payload in USD?","kind":"lookup","answerable":true,'
+        '"sources":[{"path":"docs/x.rst","start_line":1,"end_line":1}],"expected_facts":["F."]}\n'
+        '{"id":"u","question":"What does Pyro need here?","kind":"unanswerable","answerable":false}\n'
+        '{"id":"v","question":"How do I sign a usdz file?","kind":"unanswerable","answerable":false}\n',
+        encoding="utf-8",
+    )
+    answers = tmp_path / "nogate"
+    save_records(
+        answers / "m.jsonl",
+        [
+            AnswerRecord("a", "lookup", True, "ollama:m", "answer", answer="A | B."),
+            AnswerRecord("u", "unanswerable", False, "ollama:m", "refused_model"),
+            AnswerRecord("v", "unanswerable", False, "ollama:m", "invalid_citation", answer="X."),
+        ],
+    )
+    args = SimpleNamespace(questions=questions, answers_dir=answers, report=tmp_path / "r.md")
+    model_refusal_report(args)
+    text = args.report.read_text(encoding="utf-8")
+    assert "| `ollama:m` | 2 | 1 | 1 | 0 | 0 |" in text
+    assert r"| `ollama:m` | `a` | yes | answer | A \| B. |" in text
