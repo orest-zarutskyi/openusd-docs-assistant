@@ -105,6 +105,37 @@ def run_retrieval_eval(args, settings, manifest, chunks, index) -> None:
         args.report.write_text(report, encoding="utf-8", newline="\n")
 
 
+def write_answers_page(args) -> None:
+    import shutil
+    import tempfile
+
+    from .answers_page import render_answers_page
+
+    questions = load_questions(args.questions)
+    answers_dir = args.answers_dir
+    if args.models:
+        # Copy only the chosen models' files (and the verdicts) into a temporary directory.
+        wanted = set(args.models.split(","))
+        tmp = Path(tempfile.mkdtemp())
+        for f in answers_dir.glob("*.jsonl"):
+            first = f.read_text(encoding="utf-8").split("\n", 1)[0]
+            if f.name == "verdicts.jsonl" or (first and json.loads(first)["model"] in wanted):
+                shutil.copy(f, tmp / f.name)
+        answers_dir = tmp
+    html = render_answers_page(
+        questions,
+        answers_dir,
+        title=f"Answers side by side: {args.questions.as_posix()}",
+        commit=load_manifest(args.manifest).commit,
+        source=args.answers_dir.as_posix(),
+    )
+    if answers_dir != args.answers_dir:
+        shutil.rmtree(answers_dir, ignore_errors=True)
+    args.out.parent.mkdir(parents=True, exist_ok=True)
+    args.out.write_text(html, encoding="utf-8", newline="\n")
+    print(f"Wrote {args.out}")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="OpenUSD Docs Assistant")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -163,6 +194,15 @@ def main() -> int:
     labels.add_argument("--out", type=Path, default=Path("eval/llm_labels.jsonl"))
     labels.add_argument("--models", default="", help="Only these model specs (comma-separated).")
     labels.add_argument("-n", type=int, default=20)
+    page = commands.add_parser(
+        "answers-page", help="Write a static HTML page comparing answers side by side."
+    )
+    page.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))
+    page.add_argument("--answers-dir", type=Path, default=Path("reports/answers/dev"))
+    page.add_argument("--models", default="", help="Only these model specs (comma-separated).")
+    page.add_argument("--manifest", type=Path, default=Path("corpus/manifest.json"))
+    page.add_argument("--out", type=Path, default=Path("reports/answers_dev.html"))
+    page.add_argument("--final", action="store_true", help="Allow held-out answers.")
     refusals = commands.add_parser(
         "refusal-report", help="Report model refusals from a run without the retrieval gate."
     )
@@ -225,6 +265,9 @@ def main() -> int:
             return 0
         if args.command == "reverify-answers":
             reverify_answers(args)
+            return 0
+        if args.command == "answers-page":
+            write_answers_page(args)
             return 0
         if args.command == "refusal-report":
             model_refusal_report(args)
