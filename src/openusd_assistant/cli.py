@@ -42,6 +42,56 @@ from .snapshot import build_manifest, corpus_report, github_file, github_tree
 RERANKERS = ("Xenova/ms-marco-MiniLM-L-6-v2", "BAAI/bge-reranker-base")
 
 
+def run_pass_comparison(args, settings, chunks, index) -> None:
+    """ADR 19 step 4: first-pass gate and strict check replayed on the second-pass answers."""
+    from .answer_eval import REFUSED_RETRIEVAL, load_records
+    from .eval_commands import _verdict_cache, load_prices, price_for
+    from .judge import Verdict
+    from .pass_compare import passes_report, replay, summarize
+
+    questions = load_questions(args.questions)
+    hybrid = HybridSearcher(Bm25Searcher(chunks), index, depth=settings.candidate_depth)
+    rerank = RerankSearcher(
+        hybrid,
+        fastembed_scorer(settings.reranker_model, settings.reranker_cache),
+        depth=settings.rerank_depth,
+    )
+    scores = {q.id: rerank.search(q.question, settings.top_k).confidence for q in questions}
+    prices = load_prices(args.pricing)
+    cache = _verdict_cache(args.answers_dir / "verdicts.jsonl")
+    files = [f for f in sorted(args.answers_dir.glob("*.jsonl")) if f.name != "verdicts.jsonl"]
+    results: dict[str, dict] = {"first pass": {}, "second pass": {}}
+    for path in files:
+        records = load_records(path)
+        spec = records[0].model
+        saved = {r.id for r in records if r.outcome == REFUSED_RETRIEVAL}
+        again = {q for q, s in scores.items() if s is None or s < settings.rerank_min_score}
+        if saved != again:
+            raise ValueError(f"{spec}: gate decisions differ from the saved run: {saved ^ again}")
+        verdicts = {
+            r.id: Verdict.model_validate(cache[(spec, r.id)]["verdict"])
+            if cache.get((spec, r.id), {}).get("verdict")
+            else None
+            for r in records
+        }
+        price = price_for(spec, prices)
+        first = replay(records, scores, args.first_pass_gate, "strict")
+        second = replay(records, scores, settings.rerank_min_score, settings.citation_check)
+        results["first pass"][spec] = summarize(first, verdicts, price)
+        results["second pass"][spec] = summarize(second, verdicts, price)
+    setup = [
+        f"- Questions: `{args.questions.as_posix()}`; answers: `{args.answers_dir.as_posix()}`, "
+        f"one run with the frozen second-pass settings (tag `pass-2-frozen`).",
+        f"- First pass: gate {args.first_pass_gate}, `strict` citations. Second pass: gate "
+        f"{settings.rerank_min_score}, `{settings.citation_check}` citations. Everything else is "
+        "the same, so both rows come from the same model outputs (ADR 19).",
+    ]
+    report = passes_report(results, setup)
+    args.report.parent.mkdir(parents=True, exist_ok=True)
+    args.report.write_text(report, encoding="utf-8", newline=chr(10))
+    print(report)
+
+
 def run_gate_comparison(args, settings, manifest, chunks, index) -> None:
     """ADR 15: evaluate refusal-gate thresholds exactly by replaying saved answers."""
     from .answer_eval import REFUSED_RETRIEVAL, load_records
@@ -205,7 +255,7 @@ def write_answers_page(args) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="OpenUSD Docs Assistant")
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("index", "check-corpus", "eval-retrieval", "compare-gates"):
+    for name in ("index", "check-corpus", "eval-retrieval", "compare-gates", "compare-passes"):
         command = commands.add_parser(name)
         command.add_argument("--manifest", type=Path, default=Path("corpus/manifest.json"))
         command.add_argument(
@@ -213,6 +263,17 @@ def main() -> int:
         )
         if name == "check-corpus":
             command.add_argument("--report", type=Path, help="Write chunk statistics as Markdown.")
+        if name == "compare-passes":
+            command.add_argument("--questions", type=Path, default=Path("eval/heldout_v2.jsonl"))
+            command.add_argument(
+                "--answers-dir", type=Path, default=Path("reports/answers/pass2_heldout_v2")
+            )
+            command.add_argument("--pricing", type=Path, default=Path("eval/pricing.json"))
+            command.add_argument(
+                "--report", type=Path, default=Path("reports/pass2/heldout_v2_passes.md")
+            )
+            command.add_argument("--first-pass-gate", type=float, default=-0.9831)
+            command.add_argument("--final", action="store_true", help="Allow held-out questions.")
         if name == "compare-gates":
             command.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))
             command.add_argument(
@@ -435,7 +496,8 @@ def main() -> int:
         serving = args.command in {"serve", "eval-answers"}
         needs_chunks = serving and settings.retrieval_mode != "dense"
         if (
-            args.command in {"index", "check-corpus", "eval-retrieval", "compare-gates"}
+            args.command
+            in {"index", "check-corpus", "eval-retrieval", "compare-gates", "compare-passes"}
             or needs_chunks
         ):
             manifest = load_manifest(args.manifest)
@@ -459,6 +521,9 @@ def main() -> int:
                 print(f"OpenUSD {manifest.release}: {len(chunks)} verified chunks.")
                 changed = index.index(chunks)
                 print("Index activated." if changed else "The current index already matches.")
+            elif args.command == "compare-passes":
+                index.index(chunks)
+                run_pass_comparison(args, settings, chunks, index)
             elif args.command == "compare-gates":
                 index.index(chunks)
                 run_gate_comparison(args, settings, manifest, chunks, index)
