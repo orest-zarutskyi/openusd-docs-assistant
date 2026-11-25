@@ -1,6 +1,6 @@
 # 15. Choose the refusal gate for the second pass by a rule fixed in advance
 
-Status: proposed, 2026-11-25. The rule below was committed before any gate comparison ran.
+Status: accepted, 2026-11-25. The rule below was committed before any gate comparison ran (commit `cce1d58`).
 
 ## Context
 
@@ -46,6 +46,22 @@ under every variant. Each variant is therefore evaluated exactly, without a sepa
 
 The judge is not used, as in [8](0008-pre-registered-selection-rules.md).
 
+## Result
+
+`reports/pass2/gates_dev.md`. The replayed current gate reproduced the saved run's refusals exactly.
+
+| Variant | Threshold | Mean score | Unanswerable answered | Model calls |
+| --- | --- | --- | --- | --- |
+| G0 no gate | none | 0.867 | 0 | 55 |
+| G1 current | −0.9831 | 0.852 | 0 | 42 |
+| G2 refit | 0.4724 | 0.852 | 0 | 41 |
+| **G3 recall-first** | **−6.2459** | **0.867** | 0 | 54 |
+
+No variant let a model answer an unanswerable question. G0 and G3 tie on score, and G3 makes one fewer model call, so the rule picks G3. `/ask` now uses `rerank_min_score = -6.2459`.
+
 ## Consequences
 
-Filled in after the comparison.
+- Compared with the first-pass gate, Flash-Lite and qwen3:4b each answer 2 more answerable dev questions with valid citations (`working-set`, `broadcast-edit`). qwen3.5:4b gains none: it refused both.
+- Refusing unanswerable questions is now mainly the model's job. On dev all three models refused all 11 unanswerable questions without the gate. The gate only stops questions far from the corpus (on dev, one: `aousd-fee`, −6.54).
+- The margin is thin. The lowest-scoring answerable dev question (`working-set`) scores −5.95, so a held-out answerable question can still fall below the threshold. Held-out v2 measures this.
+- More questions reach the model (54 of 55 on dev, against 42), which costs latency and, for Gemini, money.

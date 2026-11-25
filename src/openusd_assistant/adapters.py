@@ -47,7 +47,10 @@ class Settings(BaseSettings):
     # Refusal gates: cosine for dense and hybrid, raw cross-encoder score for rerank.
     # The dev cosine cut was 0.6891 for dense and 0.6752 for hybrid; dense's is the default.
     min_score: float = Field(default=0.6891, ge=0, le=1)
-    rerank_min_score: float = -0.9831
+    # Second pass (ADR 15, reports/pass2/gates_dev.md): a recall-first safety net that keeps
+    # every answerable dev question; the models refuse unanswerable ones themselves.
+    # The first pass used -0.9831 (balanced accuracy on 31 questions).
+    rerank_min_score: float = -6.2459
     # Candidates taken from each of BM25 and dense before fusion, and how many of the
     # fused list the cross-encoder rescores.
     candidate_depth: int = Field(default=50, ge=10, le=200)

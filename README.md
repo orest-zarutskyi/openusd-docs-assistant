@@ -21,7 +21,7 @@ The first public release covers English questions on OpenUSD documentation. A Ho
 
 All numbers below are from the first pass (git tag [`pass-1`](https://github.com/orest-zarutskyi/openusd-docs-assistant/tree/pass-1)) and come from the reports in [`reports/`](reports). Every setting was chosen on the dev set (31 questions). The held-out set (24 questions) was run once at the end with those settings frozen. The selection rules were fixed before the runs ([ADR 8](docs/decisions/0008-pre-registered-selection-rules.md)).
 
-**Second pass (in progress).** The first-pass held-out questions are now part of dev, which has 55 questions, and a new held-out set of 60 questions written by the author ([eval/heldout_v2.jsonl](eval/heldout_v2.jsonl)) will be run once when the second-pass settings are frozen ([ADR 14](docs/decisions/0014-second-pass-split.md)).
+**Second pass (in progress).** The first-pass held-out questions are now part of dev, which has 55 questions, and a new held-out set of 60 questions written by the author ([eval/heldout_v2.jsonl](eval/heldout_v2.jsonl)) will be run once when the second-pass settings are frozen ([ADR 14](docs/decisions/0014-second-pass-split.md)). So far the refusal gate has been changed to a recall-first safety net, rerank score −6.2459 instead of −0.9831. On the 55 dev questions the models refused every unanswerable question themselves, and the new threshold keeps every answerable one ([ADR 15](docs/decisions/0015-refusal-gate-second-pass.md), [gates_dev.md](reports/pass2/gates_dev.md)).
 
 ### Retrieval
 

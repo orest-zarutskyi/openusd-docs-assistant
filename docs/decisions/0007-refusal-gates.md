@@ -1,6 +1,6 @@
 # 7. Refuse at retrieval time with a per-mode score threshold
 
-Status: accepted, 2026-11-23.
+Status: accepted, 2026-11-23. The threshold was replaced in the second pass ([15](0015-refusal-gate-second-pass.md)).
 
 ## Context
 

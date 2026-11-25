@@ -11,7 +11,7 @@ changed. The same questions can be asked on the page at `http://127.0.0.1:8000/`
 
 ## Motion demo
 
-[openusd-demo.mp4](media/openusd-demo.mp4) (36 s, 1080p) and [openusd-demo.gif](media/openusd-demo.gif) show the two responses below. The reranker scores in the video come from the deployed reranker with the shipped settings: 0.25 for the payload question and −7.76 for the Pyro question, against the gate of −0.98. Every figure is listed with its source in [demo/src/data.ts](../demo/src/data.ts). To render it again:
+[openusd-demo.mp4](media/openusd-demo.mp4) (36 s, 1080p) and [openusd-demo.gif](media/openusd-demo.gif) show the two responses below. The reranker scores in the video come from the deployed reranker with the shipped settings: 0.25 for the payload question and −7.76 for the Pyro question, against the current gate of −6.25 ([ADR 15](decisions/0015-refusal-gate-second-pass.md)). The responses below were recorded under the first-pass gate of −0.98; both gates let the payload question through and refuse the Pyro question. Every figure is listed with its source in [demo/src/data.ts](../demo/src/data.ts). To render it again:
 
 ```powershell
 cd demo

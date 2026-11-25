@@ -3,10 +3,11 @@
 //   thinking, hybrid + bge-reranker-base retrieval, top_k 8. Quotes are shown with RST markup
 //   (roles, backticks) removed; "…" marks a cut.
 // - Reranker scores: the deployed reranker's top score for each question, computed with the
-//   shipped settings; the gate is OPENUSD_RERANK_MIN_SCORE (-0.9831), fitted on dev.
+//   shipped settings; the gate is OPENUSD_RERANK_MIN_SCORE (-6.2459), the second-pass
+//   recall-first threshold (ADR 15).
 // - Metrics: reports/retrieval_heldout.md, reports/answers_*.md, reports/judge_calibration_dev.md.
 
-export const GATE = -0.9831;
+export const GATE = -6.2459;
 
 export const ANSWERED = {
   question: "Which composition arc lets me open a stage before loading a heavy asset?",

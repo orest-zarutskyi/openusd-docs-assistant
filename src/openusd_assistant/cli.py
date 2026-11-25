@@ -42,6 +42,72 @@ from .snapshot import build_manifest, corpus_report, github_file, github_tree
 RERANKERS = ("Xenova/ms-marco-MiniLM-L-6-v2", "BAAI/bge-reranker-base")
 
 
+def run_gate_comparison(args, settings, manifest, chunks, index) -> None:
+    """ADR 15: evaluate refusal-gate thresholds exactly by replaying saved answers."""
+    from .answer_eval import REFUSED_RETRIEVAL, load_records
+    from .gate_compare import (
+        choose_gate,
+        evaluate_gate,
+        gate_report,
+        merge_outcomes,
+        recall_first_threshold,
+    )
+    from .retrieval_eval import best_gate
+
+    questions = load_questions(args.questions)
+    hybrid = HybridSearcher(Bm25Searcher(chunks), index, depth=settings.candidate_depth)
+    rerank = RerankSearcher(
+        hybrid,
+        fastembed_scorer(settings.reranker_model, settings.reranker_cache),
+        depth=settings.rerank_depth,
+    )
+    scores = {q.id: rerank.search(q.question, settings.top_k).confidence for q in questions}
+
+    def runs(directory: Path) -> dict:
+        files = [f for f in sorted(directory.glob("*.jsonl")) if f.name != "verdicts.jsonl"]
+        return {load_records(f)[0].model: load_records(f) for f in files}
+
+    behind, gate_off = runs(args.baseline_dir), runs(args.nogate_dir)
+    # The replay is exact only if today's scores reproduce the gate decisions of the saved run.
+    for spec, records in behind.items():
+        saved = {r.id for r in records if r.outcome == REFUSED_RETRIEVAL}
+        replayed = {q for q, s in scores.items() if s is None or s < settings.rerank_min_score}
+        if saved != replayed:
+            raise ValueError(
+                f"{spec}: gate decisions differ from the saved run: {saved ^ replayed}"
+            )
+    per_model = {spec: merge_outcomes(r, gate_off.get(spec, [])) for spec, r in behind.items()}
+    answerable = {q.id for q in questions if q.answerable}
+    refit = best_gate(
+        [scores[q] for q in sorted(answerable)],
+        [scores[q.id] for q in questions if not q.answerable],
+    ).threshold
+    variants = {
+        "G0 no gate": None,
+        "G1 current": settings.rerank_min_score,
+        "G2 refit": refit,
+        "G3 recall-first": recall_first_threshold(scores, answerable),
+    }
+    results = {name: evaluate_gate(per_model, scores, t) for name, t in variants.items()}
+    chosen = choose_gate(results, len(answerable))
+    setup = [
+        f"- Questions: `{args.questions.as_posix()}`, {len(questions)} total, "
+        f"{len(answerable)} answerable.",
+        f"- Answers behind the current gate: `{args.baseline_dir.as_posix()}`; gate-off answers "
+        f"for the questions it refused: `{args.nogate_dir.as_posix()}`.",
+        f"- Gate score: top `{settings.reranker_model}` score over hybrid candidates; the replayed "
+        "current gate reproduces the saved run's refusals exactly.",
+    ]
+    report = gate_report(results, chosen, setup)
+    args.report.parent.mkdir(parents=True, exist_ok=True)
+    args.report.write_text(report, encoding="utf-8", newline="\n")
+    scores_path = args.report.with_name(args.report.stem + "_scores.json")
+    scores_path.write_text(
+        json.dumps(scores, indent=1, sort_keys=True) + "\n", encoding="utf-8", newline="\n"
+    )
+    print(report)
+
+
 def run_retrieval_eval(args, settings, manifest, chunks, index) -> None:
     questions = load_questions(args.questions)
     lexical = Bm25Searcher(chunks)
@@ -139,7 +205,7 @@ def write_answers_page(args) -> None:
 def main() -> int:
     parser = argparse.ArgumentParser(description="OpenUSD Docs Assistant")
     commands = parser.add_subparsers(dest="command", required=True)
-    for name in ("index", "check-corpus", "eval-retrieval"):
+    for name in ("index", "check-corpus", "eval-retrieval", "compare-gates"):
         command = commands.add_parser(name)
         command.add_argument("--manifest", type=Path, default=Path("corpus/manifest.json"))
         command.add_argument(
@@ -147,6 +213,15 @@ def main() -> int:
         )
         if name == "check-corpus":
             command.add_argument("--report", type=Path, help="Write chunk statistics as Markdown.")
+        if name == "compare-gates":
+            command.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))
+            command.add_argument(
+                "--baseline-dir", type=Path, default=Path("reports/answers/pass2_dev_baseline")
+            )
+            command.add_argument(
+                "--nogate-dir", type=Path, default=Path("reports/answers/pass2_dev_nogate")
+            )
+            command.add_argument("--report", type=Path, default=Path("reports/pass2/gates_dev.md"))
         if name == "eval-retrieval":
             command.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))
             command.add_argument(
@@ -280,7 +355,10 @@ def main() -> int:
             return 0
         serving = args.command in {"serve", "eval-answers"}
         needs_chunks = serving and settings.retrieval_mode != "dense"
-        if args.command in {"index", "check-corpus", "eval-retrieval"} or needs_chunks:
+        if (
+            args.command in {"index", "check-corpus", "eval-retrieval", "compare-gates"}
+            or needs_chunks
+        ):
             manifest = load_manifest(args.manifest)
             chunks = fetch_chunks(manifest, source_dir=args.source_dir)
             if args.command == "check-corpus":
@@ -302,6 +380,9 @@ def main() -> int:
                 print(f"OpenUSD {manifest.release}: {len(chunks)} verified chunks.")
                 changed = index.index(chunks)
                 print("Index activated." if changed else "The current index already matches.")
+            elif args.command == "compare-gates":
+                index.index(chunks)
+                run_gate_comparison(args, settings, manifest, chunks, index)
             elif args.command == "eval-retrieval":
                 index.index(chunks)  # make sure the dense index matches this corpus
                 run_retrieval_eval(args, settings, manifest, chunks, index)
