@@ -362,6 +362,26 @@ def main() -> int:
     prompts.add_argument("--scores", type=Path, default=Path("reports/pass2/gates_dev_scores.json"))
     prompts.add_argument("--v2-dir", type=Path, default=Path("reports/answers/pass2_dev_prompt_v2"))
     prompts.add_argument("--report", type=Path, default=Path("reports/pass2/prompts_dev.md"))
+    models_cmd = commands.add_parser(
+        "compare-models", help="Compare local model variants on dev with ADR 21's rule."
+    )
+    models_cmd.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))
+    models_cmd.add_argument(
+        "--baseline-dir", type=Path, default=Path("reports/answers/pass2_dev_baseline")
+    )
+    models_cmd.add_argument(
+        "--nogate-dir", type=Path, default=Path("reports/answers/pass2_dev_nogate")
+    )
+    models_cmd.add_argument(
+        "--scores", type=Path, default=Path("reports/pass2/gates_dev_scores.json")
+    )
+    models_cmd.add_argument(
+        "--former-heldout-dir", type=Path, default=Path("reports/answers/pass2_heldout_v2")
+    )
+    models_cmd.add_argument(
+        "--new-dir", type=Path, default=Path("reports/answers/pass3_dev_models")
+    )
+    models_cmd.add_argument("--report", type=Path, default=Path("reports/pass3/models_dev.md"))
     refusals = commands.add_parser(
         "refusal-report", help="Report model refusals from a run without the retrieval gate."
     )
@@ -427,6 +447,43 @@ def main() -> int:
             return 0
         if args.command == "answers-page":
             write_answers_page(args)
+            return 0
+        if args.command == "compare-models":
+            from .model_compare import choose_model, current_variants, models_report, summarize
+            from .prompt_compare import fresh_run
+
+            check = settings.citation_check
+            runs = {
+                spec: records
+                for spec, records in current_variants(
+                    args.baseline_dir,
+                    args.nogate_dir,
+                    args.scores,
+                    args.former_heldout_dir,
+                    settings.rerank_min_score,
+                    check,
+                ).items()
+                if spec.startswith("ollama:")
+            } | fresh_run(args.new_dir, check)
+            questions = load_questions(args.questions)
+            ids = {q.id for q in questions}
+            for spec, records in runs.items():
+                if {r.id for r in records} != ids:
+                    raise ValueError(f"{spec} does not cover the {len(ids)} dev questions")
+            results = {spec: summarize(records) for spec, records in runs.items()}
+            chosen = choose_model(results, sum(q.answerable for q in questions))
+            setup = [
+                f"- Questions: `{args.questions.as_posix()}`, {len(ids)} total; gate "
+                f"{settings.rerank_min_score}; citation check `{check}`; prompt "
+                f"`{settings.answer_prompt}`.",
+                f"- Current variants: replayed from `{args.baseline_dir.as_posix()}`, "
+                f"`{args.nogate_dir.as_posix()}` and `{args.former_heldout_dir.as_posix()}`. "
+                f"New variants: `{args.new_dir.as_posix()}`.",
+            ]
+            report = models_report(results, chosen, setup)
+            args.report.parent.mkdir(parents=True, exist_ok=True)
+            args.report.write_text(report, encoding="utf-8", newline=chr(10))
+            print(report)
             return 0
         if args.command == "compare-prompts":
             from .prompt_compare import (
