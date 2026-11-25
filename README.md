@@ -19,6 +19,39 @@ The first public release covers English questions on OpenUSD documentation. A Ho
 
 ## Results
 
+### Third pass: held-out v3
+
+The third pass changed only the default local model. Four larger candidates were compared with the
+two current local variants on 115 dev questions, by a rule committed before the runs: no answer to
+an unanswerable question, p95 latency within 60 s, then the best variant score. It chose qwen3.5:9b
+with thinking ([ADR 21](docs/decisions/0021-local-model-third-pass.md),
+[models_dev.md](reports/pass3/models_dev.md)). The settings were then frozen at tag
+[`pass-3-frozen`](https://github.com/orest-zarutskyi/openusd-docs-assistant/tree/pass-3-frozen)
+([ADR 22](docs/decisions/0022-pass-3-freeze-and-heldout-v3.md)).
+
+Held-out v3 has 60 real questions from public forums: 42 answerable, 18 unanswerable
+([eval/heldout_v3.jsonl](eval/heldout_v3.jsonl)). They were collected without looking at the
+documentation and checked against it by reading. An LLM drafted their wording, expected facts and
+source spans, and the author approved the selection. It was run once.
+
+| Model | Answered with valid citations | Refused by model | Unanswerable refused | Facts covered | Fully grounded | p50 s | p95 s |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| Gemini 3.5 Flash-Lite | 29 / 42 | 11 | 17 / 18 | 52% | 97% | 4.7 | 11.0 |
+| qwen3:4b, thinking | 28 / 42 | 10 | 13 / 18 | 38% | 72% | 27.1 | 67.3 |
+| qwen3.5:9b, thinking (new default) | 20 / 42 | 17 | 17 / 18 | 53% | 90% | 21.5 | 70.6 |
+| qwen3.5:4b, no thinking | 8 / 42 | 31 | 18 / 18 | 56% | 100% | 0.9 | 5.2 |
+
+- **The new local default is safer, but it answers fewer questions than qwen3:4b.** On dev it led
+  qwen3:4b by 6 valid answers; on held-out v3 it trails by 8. qwen3:4b claimed answers to 2
+  unanswerable questions, and only 72% of its judged answers are fully grounded.
+- **Real questions are harder.** Expected facts covered fall to 38–56%, against 78–86% on held-out
+  v2, and retrieval nDCG@10 is 0.557 ([retrieval_heldout_v3.md](reports/pass3/retrieval_heldout_v3.md)).
+  The questions come from a different source than v2's, so these numbers are not a like-for-like
+  comparison with v2.
+- **The refusal gate refused none of the 60 questions.** Every correct refusal came from the models.
+- **Both local thinking models exceed 60 s at p95 here**, so local `/ask` is slow for long
+  answers.
+
 ### Second pass: held-out v2
 
 The second pass changed two settings, each chosen on 55 dev questions by a rule committed before its comparison ran. The settings were then frozen at tag [`pass-2-frozen`](https://github.com/orest-zarutskyi/openusd-docs-assistant/tree/pass-2-frozen) ([ADR 19](docs/decisions/0019-pass-2-freeze-and-heldout-v2.md)).
