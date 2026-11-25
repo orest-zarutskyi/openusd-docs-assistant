@@ -22,3 +22,4 @@ supports it.
 | [15](0015-refusal-gate-second-pass.md) | Choose the refusal gate for the second pass by a rule fixed in advance |
 | [16](0016-citation-check-second-pass.md) | Choose how strictly citations are checked, by a rule fixed in advance |
 | [17](0017-answer-prompt-second-pass.md) | Relax the refusal wording of the answer prompt, if a fixed rule supports it |
+| [18](0018-rerank-depth-second-pass.md) | Choose the rerank depth for the second pass by a rule fixed in advance |
