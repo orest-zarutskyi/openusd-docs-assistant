@@ -134,11 +134,11 @@ The judge was the stricter side in all three disagreements, each a borderline ca
 
 ### Limitations
 
-- **Small sets.** The held-out set has 18 answerable questions, and each model had 9–15 answers judged. One question moves a rate by 7–11 points, so dev and held-out differences, especially for the qwen models, are partly noise.
-- **LLM-made references.** Expected sources were checked by an independent LLM review, not by an OpenUSD expert. The 20 calibration labels also come from an LLM (Claude), not a person. Calibration therefore shows agreement between two models, not correctness. Held-out v2's questions and expected facts were written by the author; their source spans were checked by an LLM review.
+- **Small sets.** The first-pass held-out set has 18 answerable questions, and each model had 9–15 answers judged. One question moves a rate by 7–11 points, so dev and held-out differences, especially for the qwen models, are partly noise. Held-out v3 has 42 answerable questions, so one question there moves a rate by about 2.4 points.
+- **LLM-made references.** Expected sources were checked by an independent LLM review, not by an OpenUSD expert. The 20 calibration labels also come from an LLM (Claude), not a person. Calibration therefore shows agreement between two models, not correctness. Held-out v2's questions and expected facts were written by the author; their source spans were checked by an LLM review. Held-out v3's questions come from public forums, but their English wording, expected facts and source spans were drafted by an LLM and approved by the author.
 - **Judge through a reseller.** The Gemini free tier allows 20 judge requests a day, so the judge ran through the [apils.in](https://apils.in) OpenAI-compatible gateway, a third-party reseller. The model behind it cannot be verified independently; the calibration numbers above are the check.
 - **Free-tier runs.** Flash-Lite answers were generated on the free tier. Costs are list prices, not what the runs were billed. Electricity and hardware for local models are not counted.
-- **Coverage, not correctness, at retrieval time.** The refusal gate only checks whether the corpus has something close to the question. On held-out it refused 2 answerable questions and let 1 unanswerable one through; the model then refused that one.
+- **Coverage, not correctness, at retrieval time.** The refusal gate only checks whether the corpus has something close to the question. On the first-pass held-out set it refused 2 answerable questions and let 1 unanswerable one through; the model then refused that one. On held-out v3's real questions it refused none, so refusals there depend entirely on the model.
 - **Versions moved during the stage.** Ollama moved from 0.40.16 (dev) to 0.40.17 (held-out); the embedding model digest stayed the same.
 
 Design decisions are recorded in [docs/decisions](docs/decisions/README.md).
@@ -193,7 +193,7 @@ uv run --locked openusd-assistant calibrate-judge
 
 `openusd-assistant answers-page` writes the side-by-side HTML page, and `refusal-report` summarises a run made with `OPENUSD_RERANK_MIN_SCORE=-1000000` and `eval-answers --ids ... --out-dir reports/answers/dev_nogate`.
 
-The judge needs `OPENUSD_JUDGE_MODEL`, plus either the Gemini key or `OPENUSD_JUDGE_PROVIDER=openai-compatible` with a gateway URL and key. Held-out commands take `--final`, `--questions eval/heldout_v2.jsonl` and their own `--out-dir`, `--answers-dir` or `--report`. Without `--final`, the CLI refuses held-out questions.
+The judge needs `OPENUSD_JUDGE_MODEL`, plus either the Gemini key or `OPENUSD_JUDGE_PROVIDER=openai-compatible` with a gateway URL and key. Held-out commands take `--final`, `--questions eval/heldout_v3.jsonl` (or an earlier set) and their own `--out-dir`, `--answers-dir` or `--report`. Without `--final`, the CLI refuses held-out questions. The later passes add `compare-gates`, `compare-citations`, `compare-prompts`, `compare-models` and `compare-passes`; each ADR from [14](docs/decisions/0014-second-pass-split.md) on names the command and report behind its result.
 
 ### Docker Compose
 
