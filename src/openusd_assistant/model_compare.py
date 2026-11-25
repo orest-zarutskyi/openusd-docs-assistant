@@ -61,10 +61,27 @@ def choose_model(results: dict[str, dict], answerable: int) -> str:
     return min(close, key=lambda s: (allowed[s]["p50_ms"] or float("inf"), s))
 
 
-def models_report(results: dict[str, dict], chosen: str, setup: list[str]) -> str:
-    def sec(ms):
-        return "—" if ms is None else f"{ms / 1000:.1f}"
+def _sec(ms):
+    return "—" if ms is None else f"{ms / 1000:.1f}"
 
+
+def _row(name: str, r: dict) -> str:
+    return (
+        f"| {name} | {r['answered']} / {r['answerable']} | {r['refused']} | "
+        f"{r['invalid_citation']} | {r['invalid_output']} | "
+        f"{r['unanswerable_refused']} / {r['unanswerable']} | {r['leaks']} | {r['score']:.3f} | "
+        f"{_sec(r['p50_ms'])} | {_sec(r['p95_ms'])} |"
+    )
+
+
+_HEADER = [
+    "| Variant | Answered (valid) | Refused by model | Invalid citation | Invalid output | "
+    "Unanswerable refused | Claimed on unanswerable | Score | p50 s | p95 s |",
+    "| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |",
+]
+
+
+def models_report(results: dict[str, dict], chosen: str, setup: list[str]) -> str:
     lines = [
         "# Local model comparison: third pass, dev",
         "",
@@ -83,6 +100,26 @@ def models_report(results: dict[str, dict], chosen: str, setup: list[str]) -> st
             f"| `{spec}` | {r['answered']} / {r['answerable']} | {r['refused']} | "
             f"{r['invalid_citation']} | {r['invalid_output']} | "
             f"{r['unanswerable_refused']} / {r['unanswerable']} | {r['score']:.3f} | "
-            f"{sec(r['p50_ms'])} | {sec(r['p95_ms'])} | {'yes' if spec == chosen else ''} |"
+            f"{_sec(r['p50_ms'])} | {_sec(r['p95_ms'])} | {'yes' if spec == chosen else ''} |"
         )
+    return "\n".join(lines) + "\n"
+
+
+def merged_runs(directories: list[Path], check) -> dict[str, list[AnswerRecord]]:
+    """One model's answers spread over several run directories, as one list per model spec."""
+    merged: dict[str, list[AnswerRecord]] = {}
+    for directory in directories:
+        for spec, records in fresh_run(directory, check).items():
+            merged.setdefault(spec, []).extend(records)
+    for spec, records in merged.items():
+        ids = [r.id for r in records]
+        if len(ids) != len(set(ids)):
+            raise ValueError(f"{spec} answers a question more than once across the runs")
+    return merged
+
+
+def runs_report(results: dict[str, dict], setup: list[str]) -> str:
+    """Labelled runs side by side. The rule that picks between them lives in the ADR."""
+    lines = ["# Run comparison", "", *setup, "", *_HEADER]
+    lines += [_row(name, r) for name, r in results.items()]
     return "\n".join(lines) + "\n"

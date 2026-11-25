@@ -366,6 +366,19 @@ def main() -> int:
     prompts.add_argument("--scores", type=Path, default=Path("reports/pass2/gates_dev_scores.json"))
     prompts.add_argument("--v2-dir", type=Path, default=Path("reports/answers/pass2_dev_prompt_v2"))
     prompts.add_argument("--report", type=Path, default=Path("reports/pass2/prompts_dev.md"))
+    runs_cmd = commands.add_parser(
+        "compare-runs", help="Summarize labelled answer runs side by side on one question set."
+    )
+    runs_cmd.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))
+    runs_cmd.add_argument(
+        "--run",
+        action="append",
+        required=True,
+        help="LABEL=DIR[+DIR...]; the directories are merged per model.",
+    )
+    runs_cmd.add_argument("--models", default="", help="Only these model specs.")
+    runs_cmd.add_argument("--report", type=Path, required=True)
+    runs_cmd.add_argument("--final", action="store_true", help="Allow held-out questions.")
     models_cmd = commands.add_parser(
         "compare-models", help="Compare local model variants on dev with ADR 21's rule."
     )
@@ -451,6 +464,33 @@ def main() -> int:
             return 0
         if args.command == "answers-page":
             write_answers_page(args)
+            return 0
+        if args.command == "compare-runs":
+            from .model_compare import merged_runs, runs_report, summarize
+
+            check = settings.citation_check
+            ids = {q.id for q in load_questions(args.questions)}
+            wanted = set(filter(None, args.models.split(",")))
+            results, setup = {}, []
+            for item in args.run:
+                label, _, dirs = item.partition("=")
+                paths = [Path(d) for d in dirs.split("+")]
+                for spec, records in merged_runs(paths, check).items():
+                    if wanted and spec not in wanted:
+                        continue
+                    if {r.id for r in records} != ids:
+                        raise ValueError(f"{label} {spec} does not cover the {len(ids)} questions")
+                    results[f"{label} `{spec}`"] = summarize(records)
+                setup.append(f"- {label}: " + ", ".join(f"`{p.as_posix()}`" for p in paths) + ".")
+            setup.insert(
+                0,
+                f"- Questions: `{args.questions.as_posix()}`, {len(ids)} total; gate "
+                f"{settings.rerank_min_score}; citation check `{check}`.",
+            )
+            report = runs_report(results, setup)
+            args.report.parent.mkdir(parents=True, exist_ok=True)
+            args.report.write_text(report, encoding="utf-8", newline=chr(10))
+            print(report)
             return 0
         if args.command == "compare-models":
             from .model_compare import choose_model, current_variants, models_report, summarize
