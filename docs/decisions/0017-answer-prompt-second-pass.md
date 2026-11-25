@@ -62,7 +62,7 @@ Under v1, the reasoning-variant rule keeps qwen3.5:4b **without thinking**: scor
 
 ## Consequences
 
-- The relaxed wording did not convert refusals into answers. qwen3:4b stopped refusing, but its five refusals became invalid citations or answers cut off at the 6,144-token limit, with no net gain. qwen3.5:4b refused more, not less. The instruction to describe what the excerpts do not cover made answers longer and more likely to break.
+- The relaxed wording did not convert refusals into answers. qwen3:4b stopped refusing, but its five refusals became invalid citations or invalid output (about 63 s each, consistent with running into the 6,144-token limit), with no net gain. qwen3.5:4b refused more, not less. The instruction to describe what the excerpts do not cover made answers longer and more likely to break.
 - With thinking on, qwen3.5:4b answers 4 more answerable questions and stops refusing them. But two unanswerable questions end in invalid output instead of a refusal, and p50 latency rises from 2.7 s to 30.4 s.
 - The local models' false refusals stay the main open gap: 10 for qwen3.5:4b and 5 for qwen3:4b on dev. A prompt wording change is not the lever. Remaining candidates are a larger token budget for thinking variants, or a different local model, each needing its own pre-registered comparison.
 - `answer_prompt` stays `v1`, and `v2` is kept in the code (`chat.PROMPTS`) so the comparison can be reproduced.
