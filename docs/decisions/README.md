@@ -24,3 +24,4 @@ supports it.
 | [17](0017-answer-prompt-second-pass.md) | Relax the refusal wording of the answer prompt, if a fixed rule supports it |
 | [18](0018-rerank-depth-second-pass.md) | Choose the rerank depth for the second pass by a rule fixed in advance |
 | [19](0019-pass-2-freeze-and-heldout-v2.md) | Freeze the second-pass settings and run held-out v2 once |
+| [20](0020-third-pass-split.md) | Fold held-out v2 into dev and hold out v3 for the third pass |
