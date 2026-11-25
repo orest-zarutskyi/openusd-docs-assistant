@@ -87,7 +87,14 @@ def generate_answers(args, settings, retrieve, ollama_models_factory) -> None:
         def progress(record, spec=spec):
             print(f"{spec} {record.id}: {record.outcome} ({record.latency_ms:.0f} ms)", flush=True)
 
-        records = run_answers(questions, shared_retrieve, chat, spec, progress=progress)
+        records = run_answers(
+            questions,
+            shared_retrieve,
+            chat,
+            spec,
+            progress=progress,
+            check=settings.citation_check,
+        )
         save_records(args.out_dir / f"{slug(spec)}.jsonl", records)
 
 

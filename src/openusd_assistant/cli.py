@@ -278,6 +278,16 @@ def main() -> int:
     page.add_argument("--manifest", type=Path, default=Path("corpus/manifest.json"))
     page.add_argument("--out", type=Path, default=Path("reports/answers_dev.html"))
     page.add_argument("--final", action="store_true", help="Allow held-out answers.")
+    cites = commands.add_parser(
+        "compare-citations", help="Re-check saved dev answers under each citation check (ADR 16)."
+    )
+    cites.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))
+    cites.add_argument(
+        "--baseline-dir", type=Path, default=Path("reports/answers/pass2_dev_baseline")
+    )
+    cites.add_argument("--nogate-dir", type=Path, default=Path("reports/answers/pass2_dev_nogate"))
+    cites.add_argument("--scores", type=Path, default=Path("reports/pass2/gates_dev_scores.json"))
+    cites.add_argument("--report", type=Path, default=Path("reports/pass2/citations_dev.md"))
     refusals = commands.add_parser(
         "refusal-report", help="Report model refusals from a run without the retrieval gate."
     )
@@ -344,6 +354,27 @@ def main() -> int:
         if args.command == "answers-page":
             write_answers_page(args)
             return 0
+        if args.command == "compare-citations":
+            from .citation_compare import citation_report, compare_citations
+
+            results, chosen, newly = compare_citations(
+                args.questions,
+                args.baseline_dir,
+                args.nogate_dir,
+                args.scores,
+                settings.rerank_min_score,
+            )
+            setup = [
+                f"- Questions: `{args.questions.as_posix()}`; answers replayed from "
+                f"`{args.baseline_dir.as_posix()}` and `{args.nogate_dir.as_posix()}` under the "
+                f"deployed gate {settings.rerank_min_score} (scores: `{args.scores.as_posix()}`).",
+                "- No model was called; only the citation check differs between rows.",
+            ]
+            report = citation_report(results, chosen, newly, setup)
+            args.report.parent.mkdir(parents=True, exist_ok=True)
+            args.report.write_text(report, encoding="utf-8", newline=chr(10))
+            print(report)
+            return 0
         if args.command == "refusal-report":
             model_refusal_report(args)
             return 0
@@ -404,7 +435,7 @@ def main() -> int:
                     generate_answers(args, settings, retrieve, OllamaModels)
                 else:
                     chat = make_chat(settings, models)
-                    app = create_app(retrieve, chat.generate, index.ready)
+                    app = create_app(retrieve, chat.generate, index.ready, settings.citation_check)
                     uvicorn.run(app, host=args.host, port=args.port)
         finally:
             client.close()

@@ -1,6 +1,6 @@
 # 9. Accept a citation only if its quote appears in the chunk, ignoring RST markup
 
-Status: accepted, 2026-11-23.
+Status: accepted, 2026-11-23. Extended in the second pass ([16](0016-citation-check-second-pass.md)).
 
 ## Context
 

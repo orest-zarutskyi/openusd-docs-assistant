@@ -5,7 +5,7 @@ from langgraph.graph import END, START, StateGraph
 from pydantic import ValidationError
 
 from .models import AskResponse, Chunk, DraftAnswer, InvalidModelOutput, Source
-from .quotes import quote_in_text
+from .quotes import CitationCheck, match_quote
 
 Retriever = Callable[[str], list[Chunk]]
 Generator = Callable[[str, list[Chunk]], DraftAnswer]
@@ -28,7 +28,9 @@ def _refuse() -> AskResponse:
     )
 
 
-def _verified_answer(draft: DraftAnswer, context: list[Chunk]) -> AskResponse:
+def _verified_answer(
+    draft: DraftAnswer, context: list[Chunk], check: CitationCheck = "strict"
+) -> AskResponse:
     if draft.status == "insufficient_context":
         return _refuse()
 
@@ -39,8 +41,16 @@ def _verified_answer(draft: DraftAnswer, context: list[Chunk]) -> AskResponse:
     sources = []
     for evidence in draft.evidence:
         chunk = chunks.get(evidence.chunk_id)
-        # Markup-insensitive but word-exact: see quotes.normalize_rst.
-        if chunk is None or not quote_in_text(evidence.quote, chunk.text):
+        # Markup-insensitive but word-exact: see quotes.match_quote and ADR 16.
+        shown = match_quote(evidence.quote, chunk.text, check) if chunk else None
+        if shown is None and check != "strict":
+            # The quote may be in another retrieved chunk than the one the model named.
+            for other in context:
+                shown = match_quote(evidence.quote, other.text, check)
+                if shown is not None:
+                    chunk = other
+                    break
+        if shown is None:
             raise InvalidModelOutput()
 
         sources.append(
@@ -51,14 +61,14 @@ def _verified_answer(draft: DraftAnswer, context: list[Chunk]) -> AskResponse:
                 start_line=chunk.start_line,
                 end_line=chunk.end_line,
                 url=chunk.url,
-                quote=evidence.quote,
+                quote=shown,
             )
         )
 
     return AskResponse(status="answer", answer=draft.answer, sources=sources)
 
 
-def build_graph(retrieve: Retriever, generate: Generator):
+def build_graph(retrieve: Retriever, generate: Generator, check: CitationCheck = "strict"):
     def retrieve_context(state: QueryState) -> dict:
         return {"context": retrieve(state["question"])}
 
@@ -76,7 +86,7 @@ def build_graph(retrieve: Retriever, generate: Generator):
         return {"draft": draft}
 
     def verify_answer(state: QueryState) -> dict:
-        return {"result": _verified_answer(state["draft"], state["context"])}
+        return {"result": _verified_answer(state["draft"], state["context"], check)}
 
     graph = StateGraph(QueryState)
     graph.add_node("retrieve", retrieve_context)

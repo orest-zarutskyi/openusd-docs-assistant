@@ -10,7 +10,7 @@ from .chat import Usage
 from .graph import _verified_answer
 from .models import Chunk, DependencyTimeout, DependencyUnavailable, DraftAnswer, InvalidModelOutput
 from .questions import Question
-from .quotes import quote_in_text
+from .quotes import CitationCheck, quote_in_text
 from .retrieval_eval import percentile
 
 # Outcomes of one question. Refusals can come from the retrieval gate or the model.
@@ -38,7 +38,9 @@ class AnswerRecord:
     usage: dict = field(default_factory=lambda: asdict(Usage()))
 
 
-def answer_question(question: Question, retrieve, chat, model: str) -> AnswerRecord:
+def answer_question(
+    question: Question, retrieve, chat, model: str, check: CitationCheck = "strict"
+) -> AnswerRecord:
     record = AnswerRecord(question.id, question.kind, question.answerable, model, ERROR)
     started = time.perf_counter()
     context: list[Chunk] = retrieve(question.question)
@@ -57,7 +59,7 @@ def answer_question(question: Question, retrieve, chat, model: str) -> AnswerRec
         record.answer = draft.answer
         record.quotes = [e.model_dump() for e in draft.evidence]
         try:
-            verified = _verified_answer(draft, context)
+            verified = _verified_answer(draft, context, check)
             record.outcome = ANSWER if verified.status == "answer" else REFUSED_MODEL
         except InvalidModelOutput:
             record.outcome = INVALID_CITATION
@@ -79,10 +81,11 @@ def run_answers(
     model: str,
     *,
     progress: Callable[[AnswerRecord], None] = lambda record: None,
+    check: CitationCheck = "strict",
 ) -> list[AnswerRecord]:
     records = []
     for question in questions:
-        record = answer_question(question, retrieve, chat, model)
+        record = answer_question(question, retrieve, chat, model, check)
         progress(record)
         records.append(record)
     return records
@@ -187,7 +190,7 @@ def choose_variants(results: dict[str, dict], answerable: int) -> dict[str, str]
     return chosen
 
 
-def reverify(record: AnswerRecord) -> AnswerRecord:
+def reverify(record: AnswerRecord, check: CitationCheck = "strict") -> AnswerRecord:
     """Re-apply the API's citation check to a saved answer without calling the model again."""
     if record.outcome not in {ANSWER, INVALID_CITATION}:
         return record
@@ -205,7 +208,7 @@ def reverify(record: AnswerRecord) -> AnswerRecord:
     ]
     try:
         draft = DraftAnswer(status="answer", answer=record.answer, evidence=record.quotes)
-        _verified_answer(draft, context)
+        _verified_answer(draft, context, check)
         outcome = ANSWER
     except (InvalidModelOutput, ValueError):
         outcome = INVALID_CITATION

@@ -27,6 +27,7 @@ from .chat import (
     user_message,
 )
 from .models import Chunk, DependencyTimeout, DependencyUnavailable, DraftAnswer, InvalidModelOutput
+from .quotes import CitationCheck
 from .retrieval import Mode, SearchResult
 
 
@@ -51,6 +52,9 @@ class Settings(BaseSettings):
     # every answerable dev question; the models refuse unanswerable ones themselves.
     # The first pass used -0.9831 (balanced accuracy on 31 questions).
     rerank_min_score: float = -6.2459
+    # How strictly quotes are matched to retrieved chunks (ADR 16).
+    # Chosen on dev by ADR 16's rule (reports/pass2/citations_dev.md); strict was the first pass.
+    citation_check: CitationCheck = "fragments"
     # Candidates taken from each of BM25 and dense before fusion, and how many of the
     # fused list the cross-encoder rescores.
     candidate_depth: int = Field(default=50, ge=10, le=200)

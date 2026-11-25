@@ -6,10 +6,16 @@ from fastapi.responses import HTMLResponse, JSONResponse
 
 from .graph import Generator, Retriever, build_graph
 from .models import AskRequest, AskResponse, AssistantError, DependencyUnavailable
+from .quotes import CitationCheck
 
 
-def create_app(retrieve: Retriever, generate: Generator, ready: Callable[[], bool]) -> FastAPI:
-    graph = build_graph(retrieve, generate)
+def create_app(
+    retrieve: Retriever,
+    generate: Generator,
+    ready: Callable[[], bool],
+    citation_check: CitationCheck = "strict",
+) -> FastAPI:
+    graph = build_graph(retrieve, generate, citation_check)
     app = FastAPI(title="OpenUSD Docs Assistant", version="0.1.0")
 
     @app.exception_handler(AssistantError)
