@@ -48,3 +48,21 @@ For both settings on held-out v2 and each model:
 
 The second pass is judged by the difference between the two settings on the same 60 questions. A
 comparison with held-out v1 numbers would mix different questions.
+
+## Result
+
+The protocol was run once on 2026-11-25. There were no provider errors in the answers. The judge's
+gateway failed more than once mid-run, and judging resumed from its saved verdicts each time, as the protocol allows.
+The rerank scores computed for the replay reproduced the saved run's retrieval refusals exactly, so the replay is exact.
+
+| Model | First pass | Second pass |
+| --- | --- | --- |
+| Gemini 3.5 Flash-Lite | 26 / 48 | 37 / 48 |
+| qwen3:4b, thinking | 19 / 48 | 31 / 48 |
+| qwen3.5:4b, no thinking | 12 / 48 | 17 / 48 |
+
+The table counts answerable held-out v2 questions answered with valid citations. With either
+setting, no model answered an unanswerable question.
+
+Full table: `reports/pass2/heldout_v2_passes.md`. Retrieval: `reports/pass2/retrieval_heldout_v2.md`.
+Judge: `reports/pass2/answers_heldout_v2.md`.
