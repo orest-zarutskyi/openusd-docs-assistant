@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<pythonPanelDocument>
+  <interface name="openusd_consultant" label="OpenUSD Consultant" icon="MISC_python" showNetworkNavigationBar="false" help_url="">
+    <script><![CDATA[
+import openusd_consultant
+
+
+def onCreateInterface():
+    return openusd_consultant.ConsultantWidget()
+]]></script>
+    <includeInPaneTabMenu menu_position="300" create_separator="false"/>
+    <includeInToolbarMenu menu_position="300" create_separator="false"/>
+    <help><![CDATA[Ask the OpenUSD Docs Assistant. Answers cite exact lines of the OpenUSD 26.08 documentation.]]></help>
+  </interface>
+</pythonPanelDocument>

@@ -140,6 +140,10 @@ To answer with Gemini instead, set `OPENUSD_CHAT_PROVIDER=gemini`, `OPENUSD_GEMI
 
 Open [localhost:8000](http://127.0.0.1:8000/) for a simple question page, or [localhost:8000/docs](http://127.0.0.1:8000/docs) for the API. Try “Which composition arc lets me open a stage before loading a heavy asset?” and “What Pyro settings should I use for my smoke shot?” The first question is covered by the corpus. The second is a refusal case.
 
+### Houdini consultant
+
+[integrations/houdini](integrations/houdini/README.md) is a small Houdini package (Houdini 20.5+). It adds an **OpenUSD Consultant** pane and shelf tool, which send questions to the running assistant and show answers with clickable links to the cited documentation lines. Requests run on a background thread. It was tested in Houdini 21.0 against the local API: an answer with two sources in 9.6 s, and a refusal in 2.7 s ([screenshot](docs/media/houdini_consultant.png)).
+
 ### Reproducing the evaluation
 
 With `OPENUSD_QDRANT_PATH=data/qdrant`, Ollama running and the keys in `.env`:

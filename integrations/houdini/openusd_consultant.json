@@ -1,0 +1,8 @@
+{
+    "env": [
+        {
+            "OPENUSD_CONSULTANT": "C:/path/to/openusd-docs-assistant/integrations/houdini"
+        }
+    ],
+    "path": "$OPENUSD_CONSULTANT"
+}
