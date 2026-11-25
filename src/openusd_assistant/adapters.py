@@ -19,8 +19,8 @@ from qdrant_client.http.exceptions import ResponseHandlingException, UnexpectedR
 
 from .chat import (
     MAX_OUTPUT_TOKENS,
+    PROMPTS,
     REASONING_MAX_TOKENS,
-    SYSTEM_PROMPT,
     Usage,
     answer_schema,
     invalid_output,
@@ -55,6 +55,8 @@ class Settings(BaseSettings):
     # How strictly quotes are matched to retrieved chunks (ADR 16).
     # Chosen on dev by ADR 16's rule (reports/pass2/citations_dev.md); strict was the first pass.
     citation_check: CitationCheck = "fragments"
+    # Answer prompt version (chat.PROMPTS); see ADR 17.
+    answer_prompt: Literal["v1", "v2"] = "v1"
     # Candidates taken from each of BM25 and dense before fusion, and how many of the
     # fused list the cross-encoder rescores.
     candidate_depth: int = Field(default=50, ge=10, le=200)
@@ -94,6 +96,8 @@ class Settings(BaseSettings):
 
 
 class OllamaModels:
+    prompt = PROMPTS["v1"]  # set per instance from settings.answer_prompt
+
     def __init__(self, settings: Settings) -> None:
         client_kwargs = {"timeout": settings.model_timeout}
         self.embeddings = OllamaEmbeddings(
@@ -102,6 +106,7 @@ class OllamaModels:
             client_kwargs=client_kwargs,
         )
         self.nomic_prefixes = settings.embedding_model.split(":")[0] == "nomic-embed-text"
+        self.prompt = PROMPTS[settings.answer_prompt]
         self.chat = ChatOllama(
             model=settings.chat_model,
             base_url=settings.ollama_url,
@@ -142,7 +147,7 @@ class OllamaModels:
         try:
             result = self.chat.invoke(
                 [
-                    SystemMessage(content=SYSTEM_PROMPT),
+                    SystemMessage(content=self.prompt),
                     HumanMessage(content=user_message(question, context)),
                 ]
             )

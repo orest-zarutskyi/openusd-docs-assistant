@@ -1,6 +1,6 @@
 # 17. Relax the refusal wording of the answer prompt, if a fixed rule supports it
 
-Status: proposed, 2026-11-25. The candidates and rule below were committed before the new runs.
+Status: accepted, 2026-11-25: keep v1 and qwen3.5:4b without thinking. The candidates and rule below were committed before the new runs (commit `b1bdf8a`).
 
 ## Context
 
@@ -43,6 +43,26 @@ second-pass answers under the same settings.
 The judge is not used for the choice. It is reported afterwards for the chosen setup, because a
 relaxed prompt may produce partial answers with lower fact coverage.
 
+## Result
+
+`reports/pass2/prompts_dev.md`. Answerable dev questions are out of 44.
+
+| Prompt | Model | Answered (valid) | Refused by model | Invalid citation | Invalid output |
+| --- | --- | --- | --- | --- | --- |
+| v1 | Flash-Lite | 41 | 0 | 3 | 0 |
+| v1 | qwen3.5:4b | 32 | 10 | 2 | 0 |
+| v1 | qwen3:4b | 37 | 5 | 2 | 0 |
+| v2 | Flash-Lite | 40 | 0 | 3 | 1 |
+| v2 | qwen3.5:4b | 25 | 13 | 3 | 3 |
+| v2 | qwen3:4b | 37 | 0 | 4 | 3 |
+
+Neither prompt let a model answer an unanswerable question. The mean scores are 0.917 for v1 and 0.886 for v2, so the rule keeps **v1**.
+
+Under v1, the reasoning-variant rule keeps qwen3.5:4b **without thinking**: score 0.864, against 0.818 with thinking.
+
 ## Consequences
 
-Filled in after the comparison.
+- The relaxed wording did not convert refusals into answers. qwen3:4b stopped refusing, but its five refusals became invalid citations or answers cut off at the 6,144-token limit, with no net gain. qwen3.5:4b refused more, not less. The instruction to describe what the excerpts do not cover made answers longer and more likely to break.
+- With thinking on, qwen3.5:4b answers 4 more answerable questions and stops refusing them. But two unanswerable questions end in invalid output instead of a refusal, and p50 latency rises from 2.7 s to 30.4 s.
+- The local models' false refusals stay the main open gap: 10 for qwen3.5:4b and 5 for qwen3:4b on dev. A prompt wording change is not the lever. Remaining candidates are a larger token budget for thinking variants, or a different local model, each needing its own pre-registered comparison.
+- `answer_prompt` stays `v1`, and `v2` is kept in the code (`chat.PROMPTS`) so the comparison can be reproduced.

@@ -288,6 +288,19 @@ def main() -> int:
     cites.add_argument("--nogate-dir", type=Path, default=Path("reports/answers/pass2_dev_nogate"))
     cites.add_argument("--scores", type=Path, default=Path("reports/pass2/gates_dev_scores.json"))
     cites.add_argument("--report", type=Path, default=Path("reports/pass2/citations_dev.md"))
+    prompts = commands.add_parser(
+        "compare-prompts", help="Compare answer prompts on dev with ADR 17's rule."
+    )
+    prompts.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))
+    prompts.add_argument(
+        "--baseline-dir", type=Path, default=Path("reports/answers/pass2_dev_baseline")
+    )
+    prompts.add_argument(
+        "--nogate-dir", type=Path, default=Path("reports/answers/pass2_dev_nogate")
+    )
+    prompts.add_argument("--scores", type=Path, default=Path("reports/pass2/gates_dev_scores.json"))
+    prompts.add_argument("--v2-dir", type=Path, default=Path("reports/answers/pass2_dev_prompt_v2"))
+    prompts.add_argument("--report", type=Path, default=Path("reports/pass2/prompts_dev.md"))
     refusals = commands.add_parser(
         "refusal-report", help="Report model refusals from a run without the retrieval gate."
     )
@@ -353,6 +366,41 @@ def main() -> int:
             return 0
         if args.command == "answers-page":
             write_answers_page(args)
+            return 0
+        if args.command == "compare-prompts":
+            from .prompt_compare import (
+                choose_prompt,
+                fresh_run,
+                prompt_report,
+                replayed_baseline,
+                summarize,
+            )
+
+            check = settings.citation_check
+            results = {
+                "v1": summarize(
+                    replayed_baseline(
+                        args.baseline_dir,
+                        args.nogate_dir,
+                        args.scores,
+                        settings.rerank_min_score,
+                        check,
+                    )
+                ),
+                "v2": summarize(fresh_run(args.v2_dir, check)),
+            }
+            answerable = sum(q.answerable for q in load_questions(args.questions))
+            chosen = choose_prompt(results, answerable)
+            setup = [
+                f"- Questions: `{args.questions.as_posix()}`; gate {settings.rerank_min_score}; "
+                f"citation check `{check}`.",
+                f"- v1: saved second-pass answers replayed from `{args.baseline_dir.as_posix()}` "
+                f"and `{args.nogate_dir.as_posix()}`. v2: a new run in `{args.v2_dir.as_posix()}`.",
+            ]
+            report = prompt_report(results, chosen, setup)
+            args.report.parent.mkdir(parents=True, exist_ok=True)
+            args.report.write_text(report, encoding="utf-8", newline=chr(10))
+            print(report)
             return 0
         if args.command == "compare-citations":
             from .citation_compare import citation_report, compare_citations
