@@ -193,7 +193,7 @@ uv run --locked openusd-assistant calibrate-judge
 
 `openusd-assistant answers-page` writes the side-by-side HTML page, and `refusal-report` summarises a run made with `OPENUSD_RERANK_MIN_SCORE=-1000000` and `eval-answers --ids ... --out-dir reports/answers/dev_nogate`.
 
-The judge needs `OPENUSD_JUDGE_MODEL`, plus either the Gemini key or `OPENUSD_JUDGE_PROVIDER=openai-compatible` with a gateway URL and key. Held-out commands take `--final`, `--questions eval/heldout_v3.jsonl` (or an earlier set) and their own `--out-dir`, `--answers-dir` or `--report`. Without `--final`, the CLI refuses held-out questions. The later passes add `compare-gates`, `compare-citations`, `compare-prompts`, `compare-models` and `compare-passes`; each ADR from [14](docs/decisions/0014-second-pass-split.md) on names the command and report behind its result.
+The judge needs `OPENUSD_JUDGE_MODEL`, plus either the Gemini key or `OPENUSD_JUDGE_PROVIDER=openai-compatible` with a gateway URL and key. Held-out commands take `--final`, `--questions eval/heldout_v3.jsonl` (or an earlier set) and their own `--out-dir`, `--answers-dir` or `--report`. Without `--final`, the CLI refuses held-out questions. The later passes add `compare-gates`, `compare-citations`, `compare-prompts`, `compare-models` and `compare-passes`; the comparison ADRs from [15](docs/decisions/0015-refusal-gate-second-pass.md) on name the report behind each result, and each report's header lists its inputs.
 
 ### Docker Compose
 
