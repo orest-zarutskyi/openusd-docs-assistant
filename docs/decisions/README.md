@@ -19,3 +19,4 @@ supports it.
 | [12](0012-gemini-adapter-and-cost.md) | Add a Gemini API adapter and price runs at official rates |
 | [13](0013-llm-judge-and-calibration.md) | Grade answers with a separate LLM judge and calibrate it against reference labels |
 | [14](0014-second-pass-split.md) | Fold the spent held-out set into dev and add held-out v2 for the second pass |
+| [15](0015-refusal-gate-second-pass.md) | Choose the refusal gate for the second pass by a rule fixed in advance |
