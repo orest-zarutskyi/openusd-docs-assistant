@@ -5,7 +5,10 @@
 // - Reranker scores: the deployed reranker's top score for each question, computed with the
 //   shipped settings; the gate is OPENUSD_RERANK_MIN_SCORE (-6.2459), the second-pass
 //   recall-first threshold (ADR 15).
-// - Metrics: reports/retrieval_heldout.md, reports/answers_*.md, reports/judge_calibration_dev.md.
+// - Metrics: Gemini Flash-Lite on held-out v3, 60 real forum questions run once with the frozen
+//   third-pass settings (reports/pass3/answers_heldout_v3.md: 29 of 42 answerable answered with
+//   valid citations, 17 of 18 unanswerable refused, 97% fully grounded); judge agreement from
+//   reports/judge_calibration_dev.md.
 
 export const GATE = -6.2459;
 
@@ -59,10 +62,10 @@ export const PIPELINE = [
 ];
 
 export const METRICS = [
-  { value: 0.834, decimals: 3, suffix: "", label: "nDCG@10", note: "retrieval, held-out" },
-  { value: 100, decimals: 0, suffix: "%", label: "correct refusals", note: "all 3 models, dev + held-out" },
-  { value: 94, decimals: 0, suffix: "%", label: "valid citations", note: "Gemini Flash-Lite, held-out" },
-  { value: 95, decimals: 0, suffix: "%", label: "judge agreement", note: "on facts, κ 0.85" },
+  { value: 69, decimals: 0, suffix: "%", label: "answered and cited", note: "29 of 42 answerable" },
+  { value: 94, decimals: 0, suffix: "%", label: "correct refusals", note: "17 of 18 unanswerable" },
+  { value: 97, decimals: 0, suffix: "%", label: "fully grounded", note: "answers, by the judge" },
+  { value: 95, decimals: 0, suffix: "%", label: "judge agreement", note: "calibration set, κ 0.85" },
 ];
 
 export const CORPUS = ["OpenUSD 26.08", "76 RST files", "952 chunks", "SHA-256 pinned"];

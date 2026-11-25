@@ -500,7 +500,7 @@ const Metrics: React.FC = () => {
         Measured, not claimed
       </div>
       <div style={{ fontSize: 30, color: C.muted, marginTop: 12, opacity: appear(frame, 8) }}>
-        31 dev questions to tune · 24 held-out questions run once with frozen settings
+        Gemini Flash-Lite · 60 real forum questions, held out and run once with frozen settings
       </div>
       <div style={{ display: "flex", gap: 28, marginTop: 70 }}>
         {METRICS.map((m, i) => {
