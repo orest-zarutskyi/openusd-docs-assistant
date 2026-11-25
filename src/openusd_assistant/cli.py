@@ -81,12 +81,12 @@ def run_pass_comparison(args, settings, chunks, index) -> None:
         results["second pass"][spec] = summarize(second, verdicts, price)
     setup = [
         f"- Questions: `{args.questions.as_posix()}`; answers: `{args.answers_dir.as_posix()}`, "
-        f"one run with the frozen second-pass settings (tag `pass-2-frozen`).",
+        f"one run with the frozen settings (tag `{args.tag}`).",
         f"- First pass: gate {args.first_pass_gate}, `strict` citations. Second pass: gate "
         f"{settings.rerank_min_score}, `{settings.citation_check}` citations. Everything else is "
         "the same, so both rows come from the same model outputs (ADR 19).",
     ]
-    report = passes_report(results, setup)
+    report = passes_report(results, setup, args.title)
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(report, encoding="utf-8", newline=chr(10))
     print(report)
@@ -273,6 +273,10 @@ def main() -> int:
                 "--report", type=Path, default=Path("reports/pass2/heldout_v2_passes.md")
             )
             command.add_argument("--first-pass-gate", type=float, default=-0.9831)
+            command.add_argument("--tag", default="pass-2-frozen", help="Tag of the frozen run.")
+            command.add_argument(
+                "--title", default="First pass vs second pass on held-out v2", help="Report title."
+            )
             command.add_argument("--final", action="store_true", help="Allow held-out questions.")
         if name == "compare-gates":
             command.add_argument("--questions", type=Path, default=Path("eval/questions.jsonl"))

@@ -45,12 +45,16 @@ def summarize(records: Sequence[AnswerRecord], verdicts: dict[str, Verdict | Non
     }
 
 
-def passes_report(results: dict[str, dict[str, dict]], setup: Sequence[str]) -> str:
+def passes_report(
+    results: dict[str, dict[str, dict]],
+    setup: Sequence[str],
+    title: str = "First pass vs second pass on held-out v2",
+) -> str:
     def pct(v):
         return "—" if v is None else f"{v:.0%}"
 
     lines = [
-        "# First pass vs second pass on held-out v2",
+        f"# {title}",
         "",
         *setup,
         "",
