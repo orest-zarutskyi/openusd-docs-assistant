@@ -170,7 +170,7 @@ def main() -> int:
     check.add_argument("--manifest", type=Path, default=Path("corpus/manifest.json"))
     check.add_argument("--source-dir", type=Path, default=Path("data/openusd-26.08"))
     check.add_argument("--dev", type=Path, default=Path("eval/questions.jsonl"))
-    check.add_argument("--heldout", type=Path, default=Path("eval/heldout.jsonl"))
+    check.add_argument("--heldout", type=Path, default=Path("eval/heldout_v2.jsonl"))
     answers = commands.add_parser("eval-answers", help="Answer questions with each model.")
     answers.add_argument("--manifest", type=Path, default=Path("corpus/manifest.json"))
     answers.add_argument("--source-dir", type=Path, help="Use a verified local source snapshot.")

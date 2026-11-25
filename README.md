@@ -19,7 +19,9 @@ The first public release covers English questions on OpenUSD documentation. A Ho
 
 ## Results
 
-All numbers come from the reports in [`reports/`](reports). Every setting was chosen on the dev set (31 questions). The held-out set (24 questions) was run once at the end with those settings frozen. The selection rules were fixed before the runs ([ADR 8](docs/decisions/0008-pre-registered-selection-rules.md)).
+All numbers below are from the first pass (git tag [`pass-1`](https://github.com/orest-zarutskyi/openusd-docs-assistant/tree/pass-1)) and come from the reports in [`reports/`](reports). Every setting was chosen on the dev set (31 questions). The held-out set (24 questions) was run once at the end with those settings frozen. The selection rules were fixed before the runs ([ADR 8](docs/decisions/0008-pre-registered-selection-rules.md)).
+
+**Second pass (in progress).** The first-pass held-out questions are now part of dev, which has 55 questions, and a new held-out set of 60 questions written by the author ([eval/heldout_v2.jsonl](eval/heldout_v2.jsonl)) will be run once when the second-pass settings are frozen ([ADR 14](docs/decisions/0014-second-pass-split.md)).
 
 ### Retrieval
 
@@ -126,7 +128,7 @@ uv run --locked openusd-assistant calibrate-judge
 
 `openusd-assistant answers-page` writes the side-by-side HTML page, and `refusal-report` summarises a run made with `OPENUSD_RERANK_MIN_SCORE=-1000000` and `eval-answers --ids ... --out-dir reports/answers/dev_nogate`.
 
-The judge needs `OPENUSD_JUDGE_MODEL`, plus either the Gemini key or `OPENUSD_JUDGE_PROVIDER=openai-compatible` with a gateway URL and key. Held-out commands take `--final`, `--questions eval/heldout.jsonl` and their own `--out-dir`, `--answers-dir` or `--report`. Without `--final`, the CLI refuses held-out questions.
+The judge needs `OPENUSD_JUDGE_MODEL`, plus either the Gemini key or `OPENUSD_JUDGE_PROVIDER=openai-compatible` with a gateway URL and key. Held-out commands take `--final`, `--questions eval/heldout_v2.jsonl` and their own `--out-dir`, `--answers-dir` or `--report`. Without `--final`, the CLI refuses held-out questions.
 
 ### Docker Compose
 
