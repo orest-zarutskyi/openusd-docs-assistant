@@ -37,7 +37,7 @@ class Settings(BaseSettings):
     qdrant_url: str = "http://127.0.0.1:6333"
     qdrant_path: Path | None = None
     ollama_url: str = "http://127.0.0.1:11434"
-    chat_model: str = "qwen3:4b"
+    chat_model: str = "qwen3.5:9b"  # chosen on dev in the third pass (ADR 21)
     embedding_model: str = "nomic-embed-text:v1.5"
     embedding_revision: str = ""
     top_k: int = Field(default=8, ge=1, le=10)
@@ -70,8 +70,8 @@ class Settings(BaseSettings):
     gemini_api_key: SecretStr | None = None  # read from .env only; never logged
     gemini_thinking_budget: int | None = None
     gemini_thinking_level: str | None = None
-    # Qwen3-family "thinking", chosen per model on dev (reports/variants_dev.md):
-    # qwen3:4b refused every dev question without it.
+    # Qwen3-family "thinking", chosen per model on dev (reports/variants_dev.md, ADR 21):
+    # qwen3:4b refused every dev question without it, and qwen3.5:9b answered 7 of 92.
     ollama_reasoning: bool = True
     ollama_num_ctx: int = Field(default=16384, ge=4096, le=131072)
     # LLM judge for answer evaluation; must not be one of the compared models.

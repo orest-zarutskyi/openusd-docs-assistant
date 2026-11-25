@@ -130,7 +130,7 @@ For an existing snapshot, pass `--source-dir data/openusd-26.08` to `check-corpu
 For live generation, copy `.env.example` to `.env`. Start [Ollama](https://ollama.com/) on the host, pull the models below, and select the Qdrant storage. For a single local process without Docker, set `OPENUSD_QDRANT_PATH` to `data/qdrant` in `.env`. Run the indexer before starting the API, because Qdrant's embedded storage accepts a single process at a time. The reranker is downloaded into `data/fastembed` on first use.
 
 ```powershell
-ollama pull qwen3:4b
+ollama pull qwen3.5:9b
 ollama pull nomic-embed-text:v1.5
 uv run --locked openusd-assistant index
 uv run --locked openusd-assistant serve
