@@ -21,3 +21,4 @@ supports it.
 | [14](0014-second-pass-split.md) | Fold the spent held-out set into dev and add held-out v2 for the second pass |
 | [15](0015-refusal-gate-second-pass.md) | Choose the refusal gate for the second pass by a rule fixed in advance |
 | [16](0016-citation-check-second-pass.md) | Choose how strictly citations are checked, by a rule fixed in advance |
+| [17](0017-answer-prompt-second-pass.md) | Relax the refusal wording of the answer prompt, if a fixed rule supports it |
