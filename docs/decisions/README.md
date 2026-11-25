@@ -27,3 +27,5 @@ supports it.
 | [20](0020-third-pass-split.md) | Fold held-out v2 into dev and hold out v3 for the third pass |
 | [21](0021-local-model-third-pass.md) | Choose the local model for the third pass by a rule fixed in advance |
 | [22](0022-pass-3-freeze-and-heldout-v3.md) | Freeze the third-pass settings and run held-out v3 once |
+| [23](0023-fourth-pass-split.md) | Fold held-out v3 into dev for the fourth pass |
+| [24](0024-retrieval-mode-fourth-pass.md) | Choose the retrieval mode for the fourth pass by a rule fixed in advance |
