@@ -1,6 +1,7 @@
 # 25. Retest the relaxed answer prompt with the new local model
 
-Status: proposed, 2026-11-26. The candidates and rule below were committed before the new run.
+Status: accepted, 2026-11-26: keep `v1`. The candidates and rule below were committed before the new
+run (commit `0485f8a`).
 
 ## Context
 
@@ -44,4 +45,23 @@ The judge is not used for the choice. Any change is validated on the next held-o
 
 ## Result
 
-Filled in after the run.
+[prompt_v2_dev.md](../../reports/pass4/prompt_v2_dev.md), qwen3.5:9b with thinking on the 175 dev
+questions (134 answerable, 41 unanswerable), written by `compare-runs`:
+
+| Prompt | Answered (valid) | Refused by model | Invalid citation | Invalid output | Unanswerable refused | Score | p50 s | p95 s |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| **v1** | **94 / 134** | 23 | 12 | 2 | 40 / 41 | **0.839** | 17.8 | 62.2 |
+| v2 | 72 / 134 | 39 | 16 | 4 | 40 / 41 | 0.756 | 26.4 | 79.6 |
+
+Neither prompt claimed an answer to an unanswerable question. `v2` scores lower and is slower, so
+step 3 fails and Flash-Lite was not run. The rule keeps **v1**.
+
+The v2 run was started once at 01:49 and lost when the machine shut down two minutes later, before
+any answer was saved. It was rerun from the start; the reported run is the only complete one.
+
+## Consequences
+
+- As with the 4B models in [17](0017-answer-prompt-second-pass.md), the relaxed wording makes the
+  model refuse more, not less: 39 refusals against 23. Its answers are also longer, which raises
+  p50 by 8.6 s.
+- The prompt is not the lever for qwen3.5:9b's false refusals. `answer_prompt` stays `v1`.
