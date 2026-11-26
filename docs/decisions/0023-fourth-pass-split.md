@@ -18,6 +18,11 @@ Its results are known, so it can no longer serve as held-out data, as happened t
   Its held-out set (v4) is collected from public forums by the method of
   [20](0020-third-pass-split.md) and needs the author's approval before it is frozen. Until then,
   no fourth-pass setting is frozen.
+- Held-out v4 is `eval/heldout_v4.jsonl`: 46 real forum questions (8 lookup, 20 paraphrase,
+  18 unanswerable; no comparison questions), approved by the author on 2026-11-26. The 100
+  candidates and the selection are in `eval/heldout_v4_candidates.csv`,
+  `eval/heldout_v4_proposal.md` and `eval/build_heldout_v4.py`. 13 suggested answerable candidates
+  were dropped because they share a primary passage with dev. `check-questions` passes.
 
 ## Consequences
 
