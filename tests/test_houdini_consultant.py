@@ -71,3 +71,30 @@ def test_ask_posts_the_question_and_reports_unreachable_servers():
     server.server_close()
     with pytest.raises(RuntimeError, match="Cannot reach the assistant"):
         consultant.ask("x", url=url, timeout=2)
+
+
+def test_describe_prim_summarizes_the_selection_in_one_short_sentence():
+    assert consultant.describe_prim(None) == ""
+    info = {
+        "path": "/World/chair",
+        "type": "Xform",
+        "kind": "component",
+        "arcs": ["references", "a payload"],
+        "variant_sets": ["modelVariant"],
+        "schemas": ["MaterialBindingAPI"],
+    }
+    assert consultant.describe_prim(info) == (
+        "The selected prim /World/chair is a Xform (kind component) with references, a payload, "
+        "variant sets modelVariant; applied schemas MaterialBindingAPI."
+    )
+    long = consultant.describe_prim({"path": "/a", "type": "Mesh", "schemas": ["S" * 400]})
+    assert len(long) <= consultant.MAX_CONTEXT_CHARS and long.endswith("…")
+
+
+def test_compose_question_appends_context_and_render_shows_it_escaped():
+    assert consultant.compose_question(" Why? ", "") == "Why?"
+    assert consultant.compose_question("Why?", "Prim /a.") == "Why?\n\nScene context: Prim /a."
+    out = consultant.render_html(
+        "Why?", {"status": "answer", "answer": "A.", "sources": []}, 1.0, "<prim>"
+    )
+    assert "Scene: &lt;prim&gt;" in out and "<prim>" not in out
