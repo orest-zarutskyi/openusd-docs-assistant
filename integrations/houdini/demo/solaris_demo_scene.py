@@ -6,7 +6,7 @@ Run it in Houdini's Python Shell or with ``hou.session``-style execution:
 
 It references two sample assets that ship with Houdini (rubber toy and squab, each with a payload
 and material variants), adds a camera, a dome light and Karma render settings, shows the result
-in the Karma viewport, selects the rubber toy and docks the consultant next to the Scene Graph Tree.
+in the Karma viewport, selects the rubber toy and docks the consultant in the Parameters pane.
 """
 
 import hou
@@ -28,7 +28,7 @@ def build():
     move = stage.createNode("xform", "place_squab")
     move.setInput(0, squab)
     move.parm("primpattern").set("/squab")
-    move.parmTuple("t").set((1.4, 0, -0.4))
+    move.parmTuple("t").set((2.6, 0, -1.2))
     move.parmTuple("r").set((0, -25, 0))
     camera = stage.createNode("camera", "shot_cam")
     camera.setInput(0, move)
@@ -52,15 +52,15 @@ def show():
     except (AttributeError, hou.OperationFailed):
         pass
     build()
-    viewer = hou.ui.paneTabOfType(hou.paneTabType.SceneViewer)
+    import openusd_consultant
+
+    viewer = openusd_consultant.lop_viewer()
     if viewer is not None:
         try:
             viewer.setHydraRenderer("Karma CPU")
         except hou.OperationFailed:
             pass
         viewer.setCurrentSceneGraphSelection(["/rubbertoy"])
-    import openusd_consultant
-
     openusd_consultant.dock()
 
 

@@ -56,7 +56,9 @@ def describe_prim(info: dict | None) -> str:
     if not info or not info.get("path"):
         return ""
     kind = f" (kind {info['kind']})" if info.get("kind") else ""
-    text = f"The selected prim {info['path']} is a {info.get('type') or 'typeless prim'}{kind}"
+    noun = info.get("type") or "typeless prim"
+    article = "an" if noun[0].lower() in "aeiou" or noun.startswith("X") else "a"
+    text = f"The selected prim {info['path']} is {article} {noun}{kind}"
     arcs = list(info.get("arcs", []))
     if info.get("variant_sets"):
         arcs.append("variant sets " + ", ".join(info["variant_sets"]))
@@ -118,11 +120,21 @@ def render_html(question: str, response: dict, seconds: float, context: str = ""
     return "".join(parts)
 
 
-def selection_info() -> dict | None:  # pragma: no cover - needs Houdini
-    """Read the first prim selected in the Solaris viewer, or None if nothing is selected."""
+def lop_viewer():  # pragma: no cover - needs Houdini
+    """The first Scene Viewer that shows a LOP network, or None."""
     import hou
 
-    viewer = hou.ui.paneTabOfType(hou.paneTabType.SceneViewer)
+    for tab in hou.ui.paneTabs():
+        if tab.type() == hou.paneTabType.SceneViewer:
+            network = tab.pwd()
+            if network is not None and network.childTypeCategory() == hou.lopNodeTypeCategory():
+                return tab
+    return None
+
+
+def selection_info() -> dict | None:  # pragma: no cover - needs Houdini
+    """Read the first prim selected in the Solaris viewer, or None if nothing is selected."""
+    viewer = lop_viewer()
     if viewer is None:
         return None
     paths = list(viewer.currentSceneGraphSelection())
@@ -296,18 +308,29 @@ if QtWidgets is not None:  # pragma: no cover - needs Houdini
         _window.raise_()
 
     def dock():
-        """Open the consultant as a pane tab next to the Scene Graph Tree (used by the shelf)."""
+        """Open the consultant as a tab in the Parameters pane, so the viewer stays visible
+        (used by the shelf). Reuses a consultant tab that is already open."""
         import hou
 
         desktop = hou.ui.curDesktop()
-        tab = desktop.paneTabOfType(hou.paneTabType.PythonPanel)
-        if tab is None:
-            anchor = desktop.paneTabOfType(hou.paneTabType.SceneGraphTree) or (
-                desktop.paneTabOfType(hou.paneTabType.NetworkEditor)
-            )
-            if anchor is None:
-                show()
-                return
-            tab = anchor.pane().createTab(hou.paneTabType.PythonPanel)
+        for tab in desktop.paneTabs():
+            if tab.type() == hou.paneTabType.PythonPanel:
+                interface = tab.activeInterface()
+                if interface is not None and interface.name() == "openusd_consultant":
+                    tab.setIsCurrentTab()
+                    return
+        anchor = None
+        for kind in (
+            hou.paneTabType.Parm,
+            hou.paneTabType.SceneGraphTree,
+            hou.paneTabType.NetworkEditor,
+        ):
+            anchor = desktop.paneTabOfType(kind)
+            if anchor is not None:
+                break
+        if anchor is None:
+            show()
+            return
+        tab = anchor.pane().createTab(hou.paneTabType.PythonPanel)
         tab.setActiveInterface(hou.pypanel.interfaceByName("openusd_consultant"))
         tab.setIsCurrentTab()

@@ -14,11 +14,19 @@ and as a chat panel inside Houdini.
 
 ## In Houdini
 
-The [Houdini package](integrations/houdini/README.md) adds an **OpenUSD Consultant** pane next to
-the Scene Graph Tree. It can add the prim selected in the viewer to the question: its type, kind,
-composition arcs, variant sets and applied schemas. The answer comes back with clickable links to
-the documentation lines it quotes. Requests run on a background thread, so Houdini stays
-responsive.
+![The OpenUSD Consultant docked in Solaris, next to a Karma viewport](docs/media/houdini_solaris.png)
+
+The [Houdini package](integrations/houdini/README.md) adds an **OpenUSD Consultant** tab to the
+Parameters pane in Solaris. It can add the prim selected in the viewer to the question: its type,
+kind, composition arcs, variant sets and applied schemas. The answer comes back with clickable
+links to the documentation lines it quotes, and a question the documentation does not cover is
+refused. Requests run on a background thread, so Houdini stays responsive.
+
+![A cited answer about variants and a refusal for a Karma question](docs/media/houdini_consultant_refusal.png)
+
+Screenshots from Houdini 21.0 with the assistant answering through Gemini 3.5 Flash-Lite. The
+scene uses two sample assets that ship with Houdini and is built by
+[integrations/houdini/demo](integrations/houdini/demo).
 
 ## Results
 

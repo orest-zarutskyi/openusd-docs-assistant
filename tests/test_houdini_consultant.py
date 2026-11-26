@@ -84,8 +84,12 @@ def test_describe_prim_summarizes_the_selection_in_one_short_sentence():
         "schemas": ["MaterialBindingAPI"],
     }
     assert consultant.describe_prim(info) == (
-        "The selected prim /World/chair is a Xform (kind component) with references, a payload, "
+        "The selected prim /World/chair is an Xform (kind component) with references, a payload, "
         "variant sets modelVariant; applied schemas MaterialBindingAPI."
+    )
+    assert (
+        consultant.describe_prim({"path": "/m", "type": "Mesh"})
+        == "The selected prim /m is a Mesh."
     )
     long = consultant.describe_prim({"path": "/a", "type": "Mesh", "schemas": ["S" * 400]})
     assert len(long) <= consultant.MAX_CONTEXT_CHARS and long.endswith("…")

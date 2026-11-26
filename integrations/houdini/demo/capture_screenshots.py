@@ -30,8 +30,12 @@ SETTLE_MS = 45_000  # let the Karma viewport converge before the first capture
 
 
 def _widget():
-    tab = hou.ui.curDesktop().paneTabOfType(hou.paneTabType.PythonPanel)
-    return tab.activeInterfaceRootWidget() if tab is not None else None
+    for tab in hou.ui.curDesktop().paneTabs():
+        if tab.type() == hou.paneTabType.PythonPanel:
+            interface = tab.activeInterface()
+            if interface is not None and interface.name() == "openusd_consultant":
+                return tab.activeInterfaceRootWidget()
+    return None
 
 
 def _save(name):
@@ -47,20 +51,26 @@ def _save(name):
 
 
 def _select(path="/rubbertoy"):
-    viewer = hou.ui.paneTabOfType(hou.paneTabType.SceneViewer)
-    if viewer is not None:
-        viewer.setCurrentSceneGraphSelection([path])
+    import openusd_consultant
+
+    viewer = openusd_consultant.lop_viewer()
+    if viewer is None:
+        viewer = hou.ui.paneTabOfType(hou.paneTabType.SceneViewer)
+        viewer.setPwd(hou.node("/stage"))
+    viewer.setCurrentSceneGraphSelection([path])
 
 
 def _ask(index):
     widget = _widget()
     if widget is None or index >= len(QUESTIONS):
+        _keep_on_top(False)
         if os.environ.get("OPENUSD_DEMO_EXIT"):
             hou.exit(suppress_save_prompt=True)
         return
     name, question = QUESTIONS[index]
     _select()
     widget._refresh_context()
+    print("context:", widget._context or "(none)")
     widget.question.setText(question)
     widget.submit()
 
@@ -73,5 +83,12 @@ def _ask(index):
     QtCore.QTimer.singleShot(500, wait)
 
 
-hou.qt.mainWindow().showMaximized()
+def _keep_on_top(on):
+    """Keep Houdini above other windows while capturing, so the screen grab shows only Houdini."""
+    window = hou.qt.mainWindow()
+    window.setWindowFlag(QtCore.Qt.WindowStaysOnTopHint, on)
+    window.showMaximized()
+
+
+_keep_on_top(True)
 QtCore.QTimer.singleShot(SETTLE_MS, lambda: _ask(0))

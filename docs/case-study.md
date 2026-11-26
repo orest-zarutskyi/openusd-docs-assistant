@@ -17,7 +17,7 @@ shows the passage it relied on, and says when the documentation does not cover t
   cross-encoder. A score threshold refuses questions far from the corpus.
 - **Checked answers.** The model must return JSON with an answer and a literal quote for each
   claim. The API rejects an answer whose quotes are not in the retrieved passages.
-- **Where artists work.** A Houdini panel docks next to the Scene Graph Tree and can add the
+- **Where artists work.** A Houdini panel docks in the Solaris Parameters pane and can add the
   selected prim (type, arcs, variants, schemas) to the question.
 - **Evaluation discipline.** Every setting was chosen on a dev set by a rule written down and
   committed before the comparison ran. After each of four passes, the settings were frozen and run

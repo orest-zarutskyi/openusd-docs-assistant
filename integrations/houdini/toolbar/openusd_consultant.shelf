@@ -5,7 +5,7 @@
   </toolshelf>
 
   <tool name="openusd_consultant" label="USD Consultant" icon="MISC_python">
-    <helpText><![CDATA[Open the OpenUSD consultant as a pane tab next to the Scene Graph Tree.]]></helpText>
+    <helpText><![CDATA[Open the OpenUSD consultant as a tab in the Parameters pane.]]></helpText>
     <script scriptType="python"><![CDATA[import openusd_consultant
 openusd_consultant.dock()]]></script>
   </tool>

@@ -15,8 +15,8 @@ Requires Houdini 20.5 or newer (Python 3.11, PySide6 through `hutil.Qt`).
    `%USERPROFILE%\Documents\houdini21.0\packages\`. Edit `OPENUSD_CONSULTANT` in it to point at this
    folder.
 3. Restart Houdini. Then open the consultant in either of two ways:
-   - the **USD Consultant** tool on the **OpenUSD** shelf docks it as a tab next to the Scene Graph
-     Tree;
+   - the **USD Consultant** tool on the **OpenUSD** shelf docks it as a tab in the Parameters pane,
+     so the viewer stays visible;
    - New Pane Tab → Misc → **OpenUSD Consultant** puts it in any pane.
 
 To use another server, set `OPENUSD_ASSISTANT_URL`, for example in the package's `env`.
@@ -36,3 +36,10 @@ To use another server, set `OPENUSD_ASSISTANT_URL`, for example in the package's
   question.
 - Requests run on a background thread, so Houdini stays responsive while the model works. That
   takes about 5 s with Gemini Flash-Lite and about 20 s with the local qwen3.5:9b with thinking.
+
+## Screenshots
+
+`demo/solaris_demo_scene.py` builds the scene used for the screenshots in the main README: the
+rubber toy and squab sample assets, a camera, a dome light and Karma settings, with the Karma
+viewport on and the toy selected. `demo/capture_screenshots.py` then asks three questions in the
+panel and saves a screenshot after each answer.
