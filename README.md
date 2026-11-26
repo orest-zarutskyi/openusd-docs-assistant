@@ -49,6 +49,8 @@ once with frozen settings.
   the citation check rejected, so it never reaches the user as an unchecked answer.
 
 How the numbers were produced, pass by pass, is in [docs/evaluation.md](docs/evaluation.md).
+A one-page summary of the project, including what did not work, is in
+[docs/case-study.md](docs/case-study.md).
 
 ## How it works
 
