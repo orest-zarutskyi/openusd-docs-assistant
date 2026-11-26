@@ -62,6 +62,6 @@ any answer was saved. It was rerun from the start; the reported run is the only 
 ## Consequences
 
 - As with the 4B models in [17](0017-answer-prompt-second-pass.md), the relaxed wording makes the
-  model refuse more, not less: 39 refusals against 23. Its answers are also longer, which raises
-  p50 by 8.6 s.
+  model refuse more, not less: 39 refusals against 23. It also writes more: 1,997 output tokens per
+  question on average against 1,484, and answers of 647 characters against 419. p50 rises by 8.6 s.
 - The prompt is not the lever for qwen3.5:9b's false refusals. `answer_prompt` stays `v1`.
