@@ -30,3 +30,4 @@ supports it.
 | [23](0023-fourth-pass-split.md) | Fold held-out v3 into dev for the fourth pass |
 | [24](0024-retrieval-mode-fourth-pass.md) | Choose the retrieval mode for the fourth pass by a rule fixed in advance |
 | [25](0025-answer-prompt-fourth-pass.md) | Retest the relaxed answer prompt with the new local model |
+| [26](0026-pass-4-freeze-and-heldout-v4.md) | Freeze the fourth-pass settings and run held-out v4 once |
