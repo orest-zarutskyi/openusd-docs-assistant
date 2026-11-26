@@ -46,7 +46,7 @@ answers in about 5 s.
   It was replaced by a safety net that keeps every answerable dev question; on the forum sets it
   refused almost nothing, so refusals come from the model.
 - **Relaxed prompt wording.** Allowing partial answers did not turn refusals into answers in two
-  separate tests: qwen3:4b's refusals became invalid output, and qwen3.5:4b and qwen3.5:9b refused
+  separate tests: qwen3:4b's refusals became invalid citations or output, and qwen3.5:4b and qwen3.5:9b refused
   more.
 - **Choosing the local model on dev.** qwen3.5:9b won on dev, but on both forum sets it answered
   fewer questions than qwen3:4b. qwen3:4b, in turn, claimed answers to unanswerable questions more
