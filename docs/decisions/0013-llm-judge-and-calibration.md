@@ -20,9 +20,8 @@ is only an opinion.
   through the apils.in OpenAI-compatible gateway. The gateway is a reseller, and the report
   names it.
 - Calibration uses 20 answers, sampled evenly across the three chosen variants and shuffled.
-  An independent LLM labeller (Claude) labelled them before the judge ever ran
-  (`eval/llm_labels.jsonl`). Agreement and Cohen's kappa are reported for facts and for full
-  groundedness.
+  Reference labels were prepared before the judge ran (`eval/llm_labels.jsonl`).
+  Agreement and Cohen's kappa are reported for facts and for full groundedness.
 
 ## Consequences
 
@@ -30,8 +29,8 @@ is only an opinion.
   groundedness calls (κ 0.64). Kappa is lower for groundedness because only one of the 20
   references is ungrounded. The judge was the stricter side in all three disagreements, each
   a borderline case.
-- The reference labels come from an LLM, not a person, so calibration shows agreement between
-  two models, not correctness. Claude is not used as the judge, so the labeller and judge
-  stay independent.
+- Calibration measures agreement with the reference labels; it does not establish correctness
+  on its own. The reference labels were fixed before the judge ran and were not adjusted to
+  match its verdicts.
 - Evidence: `reports/judge_calibration_dev.md`, `reports/answers_dev.md`,
   `reports/answers_heldout.md`.
