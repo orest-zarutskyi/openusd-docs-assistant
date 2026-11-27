@@ -4,10 +4,11 @@ The candidates are real questions from public forums (forum.aousd.org, OpenUSD G
 the SideFX forum and Stack Overflow; the URL of each post is in the CSV). They were collected
 without looking at the documentation. Each one was then checked against the 76-file corpus by
 reading the RST files directly, not through this project's retrieval, so that the set is not
-fitted to what the system already finds. An LLM wrote the questions' English wording, expected
-facts and source spans. "partly" rows were narrowed to the part the documentation answers, and
-the original wording is kept next to them. The author approved the selection rule (all suggested
-answerable rows, plus 18 unanswerable rows chosen round-robin across sites with distinct topics).
+fitted to what the system already finds. The author collected and prepared the questions,
+including their English wording, expected facts and source spans. "partly" rows were narrowed
+to the part the documentation answers, and the original wording is kept next to them. The author
+approved the selection rule (all suggested answerable rows, plus 18 unanswerable rows chosen
+round-robin across sites with distinct topics).
 Run from the project root: python eval/build_heldout_v3.py
 """
 

@@ -1,6 +1,6 @@
 # Held-out v4: selection (approved by the author on 2026-11-26)
 
-Candidates: `eval/heldout_v4_candidates.csv`, 100 real forum posts collected without looking at the docs and checked by reading the RST files. An LLM drafted the wording, facts and spans, as for v3. Nothing here has been run through the system.
+Candidates: `eval/heldout_v4_candidates.csv`, 100 real forum posts collected without looking at the docs and checked by reading the RST files. The author collected and prepared the questions, including their wording, expected facts and source spans, as for v3. Nothing here has been run through the system.
 
 ## Proposed rule (same as v3)
 

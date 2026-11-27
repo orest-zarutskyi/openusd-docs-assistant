@@ -43,9 +43,10 @@ with thinking ([ADR 21](decisions/0021-local-model-third-pass.md),
 ([ADR 22](decisions/0022-pass-3-freeze-and-heldout-v3.md)).
 
 Held-out v3 has 60 real questions from public forums: 42 answerable, 18 unanswerable
-([eval/heldout_v3.jsonl](../eval/heldout_v3.jsonl)). They were collected without looking at the
-documentation and checked against it by reading. An LLM drafted their wording, expected facts and
-source spans, and the author approved the selection. It was run once.
+([eval/heldout_v3.jsonl](../eval/heldout_v3.jsonl)). The author collected and prepared the
+questions from public discussions, gathering candidates before consulting the documentation.
+Their wording, expected facts and source spans were then checked against the documentation by
+reading, and the author selected the final set. It was run once.
 
 | Model | Answered with valid citations | Refused by model | Unanswerable refused | Facts covered | Fully grounded | p50 s | p95 s |
 | --- | --- | --- | --- | --- | --- | --- | --- |

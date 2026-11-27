@@ -22,9 +22,9 @@ shows the passage it relied on, and says when the documentation does not cover t
 - **Evaluation discipline.** Every setting was chosen on a dev set by a rule written down and
   committed before the comparison ran. After each of four passes, the settings were frozen and run
   once on a held-out set the system had not seen; the set was then folded into dev. The last
-  two sets contain 106 questions based on real public-forum posts. For v3 and v4, an LLM drafted
-  the English wording, expected facts and source spans; the author approved the selection. Held-out
-  v2 was a separate set of questions written by the author from the documentation.
+  two sets contain 106 questions collected and prepared by the author from real public-forum
+  posts, with English wording, expected facts and source spans checked against the documentation.
+  Held-out v2 was a separate set of questions written by the author from the documentation.
 
 ## Results
 

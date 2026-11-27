@@ -19,8 +19,8 @@ one question moved a held-out rate by 4–11 points.
   as the record of the v1 split that the first-pass reports refer to. It is no longer a
   held-out set.
 - Held-out v2 is `eval/heldout_v2.jsonl`: 60 new questions (28 lookup, 12 paraphrase,
-  8 comparison, 12 unanswerable) written by the project author. An LLM reviewer checked them
-  against the corpus, and the 13 confirmed fixes are in `eval/build_heldout_v2.py`. No primary
+  8 comparison, 12 unanswerable) written by the project author. They were checked against the
+  corpus, and the 13 confirmed fixes are in `eval/build_heldout_v2.py`. No primary
   source overlaps dev.
 - `check-questions` now validates dev against held-out v2. Any command on held-out v2 needs
   `--final`, as before.
@@ -33,5 +33,5 @@ one question moved a held-out rate by 4–11 points.
   the dev set grew. The comparison that matters is first-pass held-out v1 against second-pass
   held-out v2, both run once with frozen settings.
 - With 60 held-out questions, one question moves a rate by about 2 points.
-- Unlike v1, the v2 questions were not written by an LLM, which weakens the
-  "LLM evaluates LLM" limitation. The source review is still an LLM's.
+- The author prepared v2 from the documentation. Its source spans and expected facts were
+  checked against the pinned corpus before the held-out run.

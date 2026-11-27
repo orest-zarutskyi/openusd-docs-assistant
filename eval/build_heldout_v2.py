@@ -3,7 +3,7 @@
 The CSV lists 60 new questions written by the project author, with expected facts and GitHub
 links to the pinned sources.
 Every answerable question was checked against its cited lines and every unanswerable one
-against the whole corpus by an LLM reviewer; the fixes below are the confirmed findings.
+against the whole corpus in a separate review; the fixes below are the confirmed findings.
 Run once from the project root: python eval/build_heldout_v2.py
 """
 

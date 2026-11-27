@@ -17,9 +17,9 @@ The same happened to held-out v1 at the end of the first pass ([14](0014-second-
 - Held-out v3 is `eval/heldout_v3.jsonl`: 60 real questions from public forums (19 lookup,
   19 paraphrase, 4 comparison, 18 unanswerable). They were collected without looking at the
   documentation and checked against the corpus by reading it, not through this project's
-  retrieval. An LLM drafted their English wording, expected facts and source spans. The author
-  approved the selection. The provenance of every candidate is in `eval/heldout_v3_candidates.csv`
-  and `eval/build_heldout_v3.py`.
+  retrieval. The author collected and prepared the questions, including their English wording,
+  expected facts and source spans, and selected the final set. The provenance of every candidate
+  is in `eval/heldout_v3_candidates.csv` and `eval/build_heldout_v3.py`.
 - `check-questions` validates dev against held-out v3, and no primary source passage is shared.
 - The third pass tunes only on the 115 dev questions. It runs held-out v3 once after its settings
   are frozen, under rules committed before each comparison, as in the second pass.

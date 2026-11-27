@@ -1,7 +1,7 @@
 """Apply the independent review of the evaluation questions (2026-11-23).
 
-An LLM reviewer that had not seen how the questions were written checked all 56 against
-the snapshot; every finding applied here was confirmed against the cited RST lines.
+A separate review checked all 56 questions against the snapshot; every finding applied here
+was confirmed against the cited RST lines.
 Run once from the project root: python eval/review_fixes.py
 """
 

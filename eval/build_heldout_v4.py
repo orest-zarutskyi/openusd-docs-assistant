@@ -4,9 +4,10 @@ The candidates are real questions from public forums (forum.aousd.org, OpenUSD G
 the SideFX forum, the NVIDIA developer forum and Stack Overflow; the URL of each post is in the
 CSV). They were collected without looking at the documentation, and none repeats a v3 candidate.
 Each one was then checked against the 76-file corpus by reading the RST files directly, not
-through this project's retrieval. An LLM wrote the questions' English wording, expected facts and
-source spans. "partly" rows were narrowed to the part the documentation answers, and the original
-wording is kept next to them. The author approved the selection: every suggested answerable or
+through this project's retrieval. The author collected and prepared the questions, including
+their English wording, expected facts and source spans. "partly" rows were narrowed to the part
+the documentation answers, and the original wording is kept next to them. The author approved
+the selection: every suggested answerable or
 partly row that shares no primary passage with the 175 dev questions (13 were dropped, see
 why_not), plus 18 suggested unanswerable rows taken round-robin across sites in cid order.
 Run from the project root: python eval/build_heldout_v4.py

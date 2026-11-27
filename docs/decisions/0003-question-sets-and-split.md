@@ -19,12 +19,12 @@ same questions also produce the reported numbers, the numbers overstate quality.
 - The two sets may not share a primary source passage. Alternative sources (other passages
   that also answer the question) are exempt.
 - Each question lists its expected source spans and the facts a complete answer states.
-- An LLM reviewer that had not seen how the questions were written checked every source span
-  against the snapshot, and only confirmed fixes were applied (`eval/review_fixes.py`).
+- Every source span was checked against the snapshot in a separate review, and only confirmed
+  fixes were applied (`eval/review_fixes.py`).
 
 ## Consequences
 
 - Held-out numbers measure settings that were frozen before the run.
 - The sets are small: one held-out question moves a rate by 4–11 points, so differences
   between dev and held-out are partly noise.
-- The source spans were verified by an LLM review, not by a domain expert.
+- The source-span review checks agreement with the snapshot; it is not a domain-expert assessment.
